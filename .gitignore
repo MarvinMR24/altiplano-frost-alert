@@ -1,0 +1,34 @@
+# Local agent context (not published). Only Muse-related files are committed (MUSE.md).
+CLAUDE.md
+.claude/
+docs/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+web/dist/
+
+# Data (fetched by scripts, never committed)
+data/
+
+# Muse Code local state and credentials
+.muse/
+
+# Logs: keep only the sanitized sample
+logs/*
+!logs/sample_traces.jsonl
+
+# OS / editor
+.DS_Store
+.vscode/settings.json
