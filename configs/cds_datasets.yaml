@@ -1,0 +1,32 @@
+# CDS datasets downloaded by pipelines/01_download.py.
+# The request body is fixed by the dataset form. Only date, area and the output file change.
+# Add another dataset as a new key under datasets; the script does not need changes.
+datasets:
+  era5land_ts:
+    dataset_id: reanalysis-era5-land-timeseries
+    data_format: netcdf
+    variables:
+      - 2m_dewpoint_temperature
+      - 2m_temperature
+      - surface_pressure
+      - total_precipitation
+      - surface_solar_radiation_downwards
+      - surface_thermal_radiation_downwards
+      - skin_temperature
+      - soil_temperature_level_1
+      - 10m_u_component_of_wind
+      - 10m_v_component_of_wind
+    out_dir: data/raw/cds/era5land_ts
+    test:
+      point: el_alto
+      date: 2025-07-01/2025-07-31
+      file: test_elalto_2025-07.nc
+    ranges:
+      - name: main
+        date: 1985-01-01/2025-12-31
+        file: "{id}_1985-2025.nc"
+        use: train_val_test
+      - name: partial_2026
+        date: 2026-01-01/2026-09-30
+        file: "{id}_2026_partial.nc"
+        use: replay_and_live_only

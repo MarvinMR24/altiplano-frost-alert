@@ -21,13 +21,17 @@ web/dist/
 
 # Data (fetched by scripts, never committed)
 data/
+*.db
+
+# Expo
+.expo/
 
 # Muse Code local state and credentials
 .muse/
 
 # Logs: keep only the sanitized sample
 logs/*
-!logs/sample_traces.jsonl
+!logs/sample_muse_calls.jsonl
 
 # OS / editor
 .DS_Store
