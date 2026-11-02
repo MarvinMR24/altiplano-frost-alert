@@ -1,7 +1,7 @@
 """Download ERA5-Land time series from the Copernicus CDS, one request at a time.
 
 Modes:
-  --test  El Alto only, July 2025, then print a description of the file and stop.
+  --test NAME  one test request from the dataset config, then print a description of the file and stop.
   --run   every point and every date range in the dataset config, in priority order.
 
 Rules: a single process (lock file), no threads, no automatic retries, 10 s between
@@ -33,6 +33,7 @@ MANIFEST_PATH = CDS_DIR / "manifest.json"
 LOG_PATH = ROOT / "logs" / "cds_download.log"
 DEFAULT_URL = "https://cds.climate.copernicus.eu/api"
 PAUSE_SECONDS = 10
+CELL_TOL = 1e-6
 
 log = logging.getLogger("cds_download")
 
@@ -86,6 +87,15 @@ def make_client():
     url = os.environ.get("CDS_API_URL", DEFAULT_URL)
     # retry_max=1: the client must not retry failed calls on its own.
     return cdsapi.Client(url=url, key=key, retry_max=1, quiet=False, progress=False)
+
+
+def check_node_se(point):
+    """The configured box must be [lat0 + 0.1, lon0 - 0.1, lat0, lon0] for the expected cell."""
+    lat0, lon0 = point["cell"]
+    expected = [lat0 + 0.1, lon0 - 0.1, lat0, lon0]
+    if any(abs(a - b) > CELL_TOL for a, b in zip(point["area"], expected)):
+        print(f"{point['id']}: area {point['area']} does not match node_se box {[round(v, 6) for v in expected]}")
+        sys.exit(2)
 
 
 def build_request(ds_cfg, date, area):
@@ -142,9 +152,10 @@ def inspect_file(path, point, expected_vars):
         lats = coord_values(ds, ("latitude", "lat"))
         lons = coord_values(ds, ("longitude", "lon"))
         grid_points = sorted({(float(a), float(b)) for a in lats for b in lons}) if lats.size and lons.size else []
-        nearest = None
-        if grid_points:
-            nearest = min(grid_points, key=lambda p: (p[0] - point["lat"]) ** 2 + (p[1] - point["lon"]) ** 2)
+        exp_lat, exp_lon = point["cell"]
+        cell_ok = (len(grid_points) == 1
+                   and abs(grid_points[0][0] - exp_lat) < CELL_TOL
+                   and abs(grid_points[0][1] - exp_lon) < CELL_TOL)
 
         steps = np.diff(times).astype("timedelta64[s]").astype(int) if times.size > 1 else np.array([])
         step_counts = {int(s): int(c) for s, c in zip(*np.unique(steps, return_counts=True))}
@@ -166,7 +177,9 @@ def inspect_file(path, point, expected_vars):
             "gaps_over_1h": gaps,
             "nan_counts": {v: int(ds[v].isnull().sum().item()) for v in data_vars},
             "grid_points_returned": grid_points,
-            "grid_nearest": nearest,
+            "expected_cell": [exp_lat, exp_lon],
+            "cell_assertion_ok": cell_ok,
+            "t2m_le_0C_hours": int((ds["t2m"] <= 273.15).sum().item()) if "t2m" in ds else None,
             "n_expected_vars": len(expected_vars),
         }
     finally:
@@ -192,6 +205,7 @@ def download_one(client, manifest, ds_name, ds_cfg, point, date, out_path, use):
         "target_lat": point["lat"],
         "target_lon": point["lon"],
         "area": point["area"],
+        "expected_cell": point["cell"],
         "dataset_name": ds_name,
         "dataset_id": ds_cfg["dataset_id"],
         "request_dates": date,
@@ -221,6 +235,25 @@ def download_one(client, manifest, ds_name, ds_cfg, point, date, out_path, use):
     return inspect_and_finish(manifest, record, key, out_path, point, ds_cfg)
 
 
+def time_failures(info, date_range):
+    """Hourly UTC series from start 00:00 to end 23:00 of the requested range, with no gaps."""
+    start, end = date_range.split("/")
+    first = np.datetime64(f"{start}T00:00")
+    last = np.datetime64(f"{end}T23:00")
+    expected_n = int((last - first) / np.timedelta64(1, "h")) + 1
+    out = []
+    if info["time_start"] is None or np.datetime64(info["time_start"]) != first:
+        out.append(f"time start {info['time_start']} != {first}")
+    if info["time_end"] is None or np.datetime64(info["time_end"]) != last:
+        out.append(f"time end {info['time_end']} != {last}")
+    if info["n_timestamps"] != expected_n:
+        out.append(f"time count {info['n_timestamps']} != {expected_n}")
+    if set(info["step_seconds_counts"]) != {3600} or info["gaps_over_1h"]:
+        out.append(f"time step not hourly: {info['step_seconds_counts']}")
+    info["expected_timestamps"] = expected_n
+    return out
+
+
 def inspect_and_finish(manifest, record, key, out_path, point, ds_cfg):
     record.pop("error", None)
     try:
@@ -233,12 +266,24 @@ def inspect_and_finish(manifest, record, key, out_path, point, ds_cfg):
         raise SystemExit(1)
 
     record["checks"] = info
-    record["grid_lat"], record["grid_lon"] = info["grid_nearest"] if info["grid_nearest"] else (None, None)
     record["finished_at"] = dt.datetime.now(dt.timezone.utc).isoformat()
+    failures = []
+    if not info["cell_assertion_ok"]:
+        failures.append(f"cell assertion failed: expected one cell {info['expected_cell']}, "
+                        f"got {info['grid_points_returned']}")
+    failures += time_failures(info, record["request_dates"])
+    info["time_assertion_ok"] = not any(f.startswith("time") for f in failures)
+    if failures:
+        record.update(status="error", error="; ".join(failures))
+        save_manifest(manifest)
+        log.error("%s: %s", key, record["error"])
+        print_test_report(record)
+        raise SystemExit(1)
+    record["grid_lat"], record["grid_lon"] = info["grid_points_returned"][0]
     record["status"] = "complete"
     save_manifest(manifest)
-    log.info("done %s size=%d bytes timestamps=%d gaps=%d nearest=%s",
-             key, record["file_size_bytes"], info["n_timestamps"], info["gaps_over_1h"], info["grid_nearest"])
+    log.info("done %s size=%d bytes timestamps=%d gaps=%d cell=%s",
+             key, record["file_size_bytes"], info["n_timestamps"], info["gaps_over_1h"], info["grid_points_returned"][0])
     return True
 
 
@@ -248,11 +293,13 @@ def print_test_report(record):
     print(f"file size: {record['file_size_bytes']} bytes, sha256 {record['sha256'][:16]}...")
     print(f"zip archive: {c['was_zip']}  netcdf files: {c['netcdf_files']}")
     print(f"dimensions: {c['dims']}")
-    print(f"time coord: {c['time_coord']}  timestamps: {c['n_timestamps']} (expected 744)")
+    print(f"time coord: {c['time_coord']}  timestamps: {c['n_timestamps']} (expected {c.get('expected_timestamps')})")
     print(f"time range: {c['time_start']} -> {c['time_end']}")
     print(f"time step counts (seconds: count): {c['step_seconds_counts']}  gaps over 1 h: {c['gaps_over_1h']}")
     print(f"grid points returned: {c['grid_points_returned']}")
-    print(f"nearest to target ({record['target_lat']}, {record['target_lon']}): {c['grid_nearest']}")
+    print(f"number of cells: {len(c['grid_points_returned'])}  expected cell: {c['expected_cell']}  "
+          f"assertion: {'PASS' if c['cell_assertion_ok'] else 'FAIL'}")
+    print(f"hours with t2m <= 0 C: {c['t2m_le_0C_hours']}  total NaN: {sum(c['nan_counts'].values())}")
     print("variables (units, long name, NaN count):")
     for v in c["data_vars"]:
         print(f"  {v:10s} {c['units'][v]:12s} {c['long_names'][v]:45s} NaN={c['nan_counts'][v]}")
@@ -265,20 +312,25 @@ def print_summary(manifest):
         c = r.get("checks", {})
         size = r.get("file_size_bytes")
         print(f"{key:55s} {r['status']:9s} {size / 1e6 if size else 0:8.1f} "
-              f"{c.get('n_timestamps', 0):7d} {c.get('gaps_over_1h', 0):5d} {c.get('grid_nearest')}")
+              f"{c.get('n_timestamps', 0):7d} {c.get('gaps_over_1h', 0):5d} {c.get('grid_points_returned')}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--test", action="store_true")
+    mode.add_argument("--test", metavar="NAME", help="name of a test under the dataset's tests key")
     mode.add_argument("--run", action="store_true")
     parser.add_argument("--config", default="configs/points.yaml")
     parser.add_argument("--datasets", default="configs/cds_datasets.yaml")
     parser.add_argument("--dataset", default="era5land_ts")
+    parser.add_argument("--ranges", nargs="+", help="names of date ranges to download (default: all)")
     args = parser.parse_args()
 
-    points = yaml.safe_load((ROOT / args.config).read_text())["points"]
+    points_cfg = yaml.safe_load((ROOT / args.config).read_text())
+    points = points_cfg["points"]
+    if points_cfg.get("area_mode") == "node_se":
+        for p in points:
+            check_node_se(p)
     ds_cfg = yaml.safe_load((ROOT / args.datasets).read_text())["datasets"][args.dataset]
     out_dir = ROOT / ds_cfg["out_dir"]
 
@@ -288,15 +340,19 @@ def main():
         client = make_client()
         manifest = load_manifest()
         if args.test:
-            point = next(p for p in points if p["id"] == ds_cfg["test"]["point"])
-            out_path = out_dir / ds_cfg["test"]["file"]
-            download_one(client, manifest, args.dataset, ds_cfg, point, ds_cfg["test"]["date"], out_path, "test")
+            test = ds_cfg["tests"][args.test]
+            point = dict(next(p for p in points if p["id"] == test["point"]))
+            point["area"] = test.get("area", point["area"])
+            out_path = out_dir / test["file"]
+            download_one(client, manifest, args.dataset, ds_cfg, point, test["date"], out_path, f"test_{args.test}")
             print_test_report(manifest["files"][str(out_path.relative_to(ROOT))])
             return
 
         first = True
         for point in points:
             for rng in ds_cfg["ranges"]:
+                if args.ranges and rng["name"] not in args.ranges:
+                    continue
                 out_path = out_dir / rng["file"].format(id=point["id"])
                 key = str(out_path.relative_to(ROOT))
                 if manifest["files"].get(key, {}).get("status") == "complete":
