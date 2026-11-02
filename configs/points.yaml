@@ -1,0 +1,36 @@
+# Download points in priority order.
+# area is [North, West, South, East], a 0.1 degree box handed to CDS as is.
+# The nearest grid point to (lat, lon) inside the returned box is recorded in the manifest.
+points:
+  - id: el_alto
+    lat: -16.51
+    lon: -68.19
+    area: [-16.4, -68.2, -16.5, -68.1]
+  - id: oruro
+    lat: -17.97
+    lon: -67.11
+    area: [-17.9, -67.1, -18.0, -67.0]
+  - id: patacamaya
+    lat: -17.24
+    lon: -67.92
+    area: [-17.1, -67.9, -17.2, -67.8]
+  - id: calamarca
+    lat: -17.00
+    lon: -68.13
+    area: [-16.9, -68.1, -17.0, -68.0]
+  - id: caracollo
+    lat: -17.64
+    lon: -67.24
+    area: [-17.5, -67.2, -17.6, -67.1]
+  - id: corocoro
+    lat: -17.19
+    lon: -69.07
+    area: [-17.1, -69.1, -17.2, -69.0]
+  - id: charana
+    lat: -17.59
+    lon: -69.45
+    area: [-17.5, -69.5, -17.6, -69.4]
+  - id: huanuni
+    lat: -18.28
+    lon: -66.84
+    area: [-18.2, -66.8, -18.3, -66.7]
