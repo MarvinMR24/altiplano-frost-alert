@@ -1,0 +1,15 @@
+.env
+.env.*
+.git
+.venv
+node_modules
+data/
+logs/
+*.db
+artifacts/
+__pycache__
+.expo
+var/
+mobile/
+backend/
+experiments/

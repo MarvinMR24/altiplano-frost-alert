@@ -1,7 +1,7 @@
 # Local agent context (not published). Only Muse-related files are committed (MUSE.md).
 CLAUDE.md
 .claude/
-docs/
+.claude/settings.local.json
 
 # Secrets
 .env
@@ -36,3 +36,11 @@ logs/*
 # OS / editor
 .DS_Store
 .vscode/settings.json
+
+# Module contract folder between ml and backend
+artifacts/*
+!artifacts/.gitkeep
+
+# Modules
+mobile/node_modules/
+backend/var/

@@ -17,16 +17,33 @@ datasets:
       - 10m_u_component_of_wind
       - 10m_v_component_of_wind
     out_dir: data/raw/cds/era5land_ts
-    test:
-      point: el_alto
-      date: 2025-07-01/2025-07-31
-      file: test_elalto_2025-07.nc
+    # Cell tests. corner and center are kept for reference only: they return one cell
+    # other than the target and four cells, so they now fail the one-cell assertion.
+    # corner: [-16.4, -68.2, -16.5, -68.1] returned (-16.5, -68.1).
+    # center: [-16.4, -68.3, -16.6, -68.1] returned lat -16.5, -16.6 and lon -68.2, -68.1.
+    tests:
+      corner:
+        point: el_alto
+        date: 2025-07-01/2025-07-31
+        area: [-16.4, -68.2, -16.5, -68.1]
+        file: test_elalto_2025-07.nc
+      center:
+        point: el_alto
+        date: 2025-07-01/2025-07-31
+        area: [-16.4, -68.3, -16.6, -68.1]
+        file: test_elalto_2025-07_center.nc
+      node_se:
+        point: el_alto
+        date: 2025-07-01/2025-07-31
+        area: [-16.4, -68.3, -16.5, -68.2]
+        file: test_elalto_2025-07_node_se.nc
     ranges:
       - name: main
         date: 1985-01-01/2025-12-31
         file: "{id}_1985-2025.nc"
         use: train_val_test
-      - name: partial_2026
-        date: 2026-01-01/2026-09-30
-        file: "{id}_2026_partial.nc"
-        use: replay_and_live_only
+      # Never used for training, validation or test; usable for the replay and the manual tick.
+      - name: 2026_ytd
+        date: 2026-01-01/2026-10-26
+        file: "{id}_2026_ytd.nc"
+        use: out_of_sample_check
