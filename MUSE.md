@@ -4,7 +4,7 @@ Read this file fully at the start of every session. Background, rubric, experime
 
 ## 1. Mission
 
-Build a reproducible frost-prediction pipeline and a simple iPhone app (Expo Go) that sends email and in-app alerts, each with a Muse Spark explanation, for areas of interest across the Bolivian and Peruvian Altiplano.
+Build a reproducible frost-prediction pipeline and a simple iPhone app (Expo Go) that sends email and in-app alerts, each with a Muse Spark explanation, for areas of interest in the Bolivian Altiplano (La Paz to Oruro corridor), covered by the 8 points already downloaded.
 
 Deadline: Wed Nov 4, 10:00 PM Bolivia time (UTC-4). **Code freeze: Mon Nov 2 at midnight.** Builder is unavailable on Monday daytime.
 
@@ -59,7 +59,7 @@ External services
 
 ### 3.1 User flow (iPhone, Expo Go)
 1. **Onboarding:** language (Spanish by default), profile (producer or resident), optional crops and livestock, optional email (double opt-in with a confirmation link), notification permission.
-2. **Select areas of interest (AOI):** city presets La Paz, El Alto, Oruro, Potosi, Puno, Juliaca, Cusco. A custom pin only if time allows. Each AOI has a user threshold of 30, 50 or 70 percent.
+2. **Select areas of interest (AOI):** only inside the coverage of the 8 downloaded points in `configs/points.yaml` (El Alto, Oruro, Patacamaya, Calamarca, Caracollo, Corocoro, Charana, Huanuni), one ERA5-Land cell each. No other places. Each AOI has a user threshold of 30, 50 or 70 percent.
 3. **Risk view per AOI:** the night's date, the label "reanalysis data", probability, level (none, watch, alert), conditions for that night, time the night was processed.
 4. **Alert arrives** by email and by in-app push.
 5. **Alert detail:** headline, why, what to do (by profile), caveats, and "how this was computed" (model version and a validation metrics summary).
@@ -71,7 +71,9 @@ There is no chat and no agent.
 ### 3.2 System flow (replay or manual tick, no scheduler)
 There is no periodic scheduler. CDS reanalysis is published a few days late, so there is no live "tonight" forecast in this version. A night is processed in one of two modes only:
 - **Replay:** a held-out test-period night with a simulated clock (section 3.3).
-- **Manual tick:** `POST /internal/tick?date=YYYY-MM-DD` (default: the latest night available in the processed table) runs steps 2 to 6 for that night.
+- **Manual tick:** `python -m app.cli tick --date YYYY-MM-DD` (default: the latest night available in the processed table) runs steps 2 to 6 for that night.
+
+Replay and tick are a CLI inside the backend container, never HTTP endpoints (ngrok forwards every route).
 
 Alerts are generated when a night is processed. Never describe them as real time or instant.
 
@@ -98,7 +100,6 @@ Endpoints:
 - `GET /risk?aoi_id=`
 - `GET /alerts`, `GET /alerts/{id}`
 - `POST /email/confirm`
-- `POST /internal/tick?date=YYYY-MM-DD`, `POST /internal/replay` (local only, secret header)
 
 Tables: `users`, `devices`, `aois`, `alerts`, `explanations` (cache), `runs`.
 

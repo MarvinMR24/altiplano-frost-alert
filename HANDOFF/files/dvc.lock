@@ -1,0 +1,168 @@
+schema: '2.0'
+stages:
+  02a_eda_era5land:
+    cmd: .venv/bin/python pipelines/02a_eda_era5land.py
+    deps:
+    - path: configs/frost.yaml
+      hash: md5
+      md5: db84cbf6d601b38ab97fd882c5e3af2d
+      size: 1616
+    - path: configs/points.yaml
+      hash: md5
+      md5: 70c83107930ffabca1139b624bc9d7b3
+      size: 1302
+    - path: data/raw/cds
+      hash: md5
+      md5: a01716a1c75746d098ceff10afc961c5.dir
+      size: 263350032
+      nfiles: 29
+    - path: pipelines/02a_eda_era5land.py
+      hash: md5
+      md5: d701bbc3335872b6144833f209017fcf
+      size: 11682
+    - path: pipelines/common.py
+      hash: md5
+      md5: 97381ff775e68ebcc6b3a98bb2adf206
+      size: 7165
+    outs:
+    - path: data/processed/anomalies.parquet
+      hash: md5
+      md5: 89130bd3efe94cbf61d78cd151a45d90
+      size: 389185
+    - path: data/processed/eda_era5land
+      hash: md5
+      md5: 6b7b94dc078210871f17a687970f3a6d.dir
+      size: 1015344
+      nfiles: 9
+    - path: docs/eda_era5land.md
+      hash: md5
+      md5: cffecb8d20ef02d834489c30cb0afc9d
+      size: 8731
+    - path: docs/figures/era5land_frost_nights_by_year.png
+      hash: md5
+      md5: 8e516a76ee8f0b58cbaecc0e17b98215
+      size: 142691
+    - path: docs/figures/era5land_frost_rate_by_month.png
+      hash: md5
+      md5: 94351f725ab6162f65c5c4ea4f6432ac
+      size: 119236
+  02b_eda_agera5:
+    cmd: .venv/bin/python pipelines/02b_eda_agera5.py
+    deps:
+    - path: configs/frost.yaml
+      hash: md5
+      md5: db84cbf6d601b38ab97fd882c5e3af2d
+      size: 1616
+    - path: configs/points.yaml
+      hash: md5
+      md5: 70c83107930ffabca1139b624bc9d7b3
+      size: 1302
+    - path: data/raw/cds
+      hash: md5
+      md5: a01716a1c75746d098ceff10afc961c5.dir
+      size: 263350032
+      nfiles: 29
+    - path: pipelines/02b_eda_agera5.py
+      hash: md5
+      md5: 3abdfac7c7b1eae57d3ecb0e4d50d012
+      size: 9819
+    - path: pipelines/common.py
+      hash: md5
+      md5: 97381ff775e68ebcc6b3a98bb2adf206
+      size: 7165
+    outs:
+    - path: data/processed/eda_agera5
+      hash: md5
+      md5: 723f28fdd5bd5a4b79baaf1372d1385a.dir
+      size: 4365616
+      nfiles: 5
+    - path: docs/eda_agera5.md
+      hash: md5
+      md5: 6649eb817ae8698e6f8806447f8e6609
+      size: 5907
+    - path: docs/figures/agera5_cloud_cover_by_month.png
+      hash: md5
+      md5: d01b519aab6940121da7de74cd2d5329
+      size: 119700
+    - path: docs/figures/agera5_vs_era5land_tmin_el_alto.png
+      hash: md5
+      md5: 979bc933e84df93e02cc3e36157ec974
+      size: 89031
+  03_build_night_table:
+    cmd: .venv/bin/python pipelines/03_build_night_table.py
+    deps:
+    - path: configs/frost.yaml
+      hash: md5
+      md5: db84cbf6d601b38ab97fd882c5e3af2d
+      size: 1616
+    - path: configs/points.yaml
+      hash: md5
+      md5: 70c83107930ffabca1139b624bc9d7b3
+      size: 1302
+    - path: data/raw/cds
+      hash: md5
+      md5: a01716a1c75746d098ceff10afc961c5.dir
+      size: 263350032
+      nfiles: 29
+    - path: pipelines/03_build_night_table.py
+      hash: md5
+      md5: 7f1adea15a729dc87b25e2215f2e53f3
+      size: 10587
+    - path: pipelines/common.py
+      hash: md5
+      md5: 97381ff775e68ebcc6b3a98bb2adf206
+      size: 7165
+    outs:
+    - path: data/processed/crosschecks.parquet
+      hash: md5
+      md5: 57052ad744f535c6b3129eb89f106011
+      size: 3096874
+    - path: data/processed/features.parquet
+      hash: md5
+      md5: fe8f22c33e852ff9cf99de99168f752f
+      size: 14457921
+    - path: data/processed/features_manifest.json
+      hash: md5
+      md5: 713a3419c152ccdd6376cfd00694717b
+      size: 4665
+  03b_eda_merged:
+    cmd: .venv/bin/python pipelines/03b_eda_merged.py
+    deps:
+    - path: data/processed/crosschecks.parquet
+      hash: md5
+      md5: 57052ad744f535c6b3129eb89f106011
+      size: 3096874
+    - path: data/processed/features.parquet
+      hash: md5
+      md5: fe8f22c33e852ff9cf99de99168f752f
+      size: 14457921
+    - path: data/processed/features_manifest.json
+      hash: md5
+      md5: 713a3419c152ccdd6376cfd00694717b
+      size: 4665
+    - path: pipelines/03b_eda_merged.py
+      hash: md5
+      md5: 920a1690212020f6ee3517fc112e09f6
+      size: 9355
+    - path: pipelines/common.py
+      hash: md5
+      md5: 97381ff775e68ebcc6b3a98bb2adf206
+      size: 7165
+    outs:
+    - path: data/processed/eda_merged
+      hash: md5
+      md5: c4a31000057a3e210c7d294921667ca2.dir
+      size: 11076
+      nfiles: 10
+    - path: docs/eda_merged.md
+      hash: md5
+      md5: e60a03074ae3773bf354b9c1f8de37a2
+      size: 7197
+    - path: docs/figures/merged_corr_with_label_train.png
+      hash: md5
+      md5: 01c83fc9d277835585a0fecffc399da6
+      size: 65415
+    - path: docs/figures/merged_frost_rate_by_year.png
+      hash: md5
+      md5: 40e150a18cf2e72780e06fb21dd28d92
+      size: 55551

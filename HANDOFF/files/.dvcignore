@@ -1,0 +1,8 @@
+# Add patterns of files dvc should ignore, which could improve
+# the performance. Learn more at
+# https://dvc.org/doc/user-guide/dvcignore
+# Extracted copies of the zipped ERA5-Land downloads (written by pipelines/01_download.py
+# during inspection). They duplicate the .nc archives, so they are not versioned.
+data/raw/cds/**/*_unzipped/
+# Scratch extraction of the zipped raw files (rebuilt from the zips by pipelines/common.py).
+data/processed/scratch/

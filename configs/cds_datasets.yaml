@@ -47,3 +47,38 @@ datasets:
         date: 2026-01-01/2026-10-26
         file: "{id}_2026_ytd.nc"
         use: out_of_sample_check
+
+  # AgERA5 daily agrometeorological indicators. A different product from ERA5-Land with
+  # its own 0.1 degree grid, possibly offset from the ERA5-Land cell by up to about 7 km.
+  # One request per point with a single location (the real city coordinates from
+  # configs/points.yaml); the service snaps to the nearest grid point, which must lie
+  # within max_offset_deg of the requested coordinates in latitude and longitude.
+  agera5_ts:
+    dataset_id: sis-agrometeorological-indicators-timeseries
+    data_format: netcdf
+    selection: location
+    time_step: daily
+    max_offset_deg: 0.06
+    variables:
+      - 2m_temperature_night_time_minimum
+      - 2m_relative_humidity_at_15_00
+      - cloud_cover_24_hour_mean
+    # How each variable may be used downstream.
+    roles:
+      # 24 hour mean over the whole local day: for the night of day D only day D-1 is used.
+      cloud_cover_24_hour_mean: {role: feature, lag_days: 1}
+      # Only to cross-check the frost label in the EDA. Never a model feature.
+      2m_temperature_night_time_minimum: {role: eda_label_check_only}
+      2m_relative_humidity_at_15_00: {role: crosscheck}
+    out_dir: data/raw/cds/agera5_ts
+    tests:
+      agera5:
+        point: el_alto
+        date: 2025-07-01/2025-07-31
+        file: test_elalto_2025-07.nc
+    ranges:
+      # Rows dated 2026 never enter training, validation or test; the split step filters by date.
+      - name: main
+        date: 1984-12-31/2026-10-25
+        file: "{id}_1984-2026.nc"
+        use: train_val_test_until_2025_then_out_of_sample_check

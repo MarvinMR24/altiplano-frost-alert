@@ -18,3 +18,31 @@
 - `area_mode: node_se`: for a target node (lat0, lon0) the box is [lat0 + 0.1, lon0 - 0.1, lat0, lon0]. `pipelines/01_download.py` checks each configured box against this formula and asserts that every response contains exactly one cell equal to the expected one (tolerance 1e-6), otherwise it stops.
 - The (-16.5, -68.2) cell from the node_se box is identical, for all 10 variables, to the same cell inside the four-cell response.
 - The choice of cell matters: hours with t2m <= 0 C in July 2025 were 92 at (-16.5, -68.2), 66 at (-16.5, -68.1), 68 at (-16.6, -68.2) and 13 at (-16.6, -68.1).
+
+## 2026-11-02: AgERA5 daily series (cloud cover)
+- Second CDS dataset: `sis-agrometeorological-indicators-timeseries` (AgERA5, Wageningen Environmental Research, derived from ERA5). Config `agera5_ts` in `configs/cds_datasets.yaml`, downloaded with the same script, lock file and manifest.
+- One request per point with a single `location` (the real city coordinates, not the ERA5-Land node, because the service snaps to the nearest 0.1 degree point and a node could tie). The returned point must be within 0.06 degrees of the requested coordinates in latitude and longitude; it is recorded in the manifest.
+- AgERA5 is a different product with its own 0.1 degree grid, possibly offset from the ERA5-Land cell by up to about 7 km.
+- Date range 1984-12-31 to 2026-10-25, daily. 1984-12-31 provides the lag for 1985-01-01. Rows dated 2026 never enter training, validation or test; the split step filters by date.
+- Variable roles:
+  - `cloud_cover_24_hour_mean` (file name `Cloud_Cover_Mean_24h`, fraction 0 to 1, mean 00 to 00 local time): model feature, previous day only. It covers the whole local day, so for the night that starts on day D only the value of day D-1 may be used.
+  - `2m_temperature_night_time_minimum` (`Temperature_Air_2m_Min_Night_Time`, K, minimum 18 to 06 local time): EDA cross-check of the frost label only. Never a model feature.
+  - `2m_relative_humidity_at_15_00` (`Relative_Humidity_2m_15h`, %, at 15 local time): cross-check.
+- Time convention: `valid_time` is the local date at 00:00. The night minimum of date D covers the night that ends on the morning of D (18 local time of D-1 to 06 local time of D). Check on El Alto, July 2025, 29 complete nights against the ERA5-Land hourly t2m of the same 0.1 degree cell: correlation 0.78 with the night ending on D, 0.05 with the night starting on D. So the label check for the night starting on D uses the AgERA5 night minimum dated D+1.
+
+## 2026-11-03: DVC tracking of the raw CDS data
+- DVC 3.67.1 is initialised with `dvc init --no-scm` (plain `dvc init` can stage files in git). Default remote `dagshub` (`https://dagshub.com/SNARF3/altiplano-frost.dvc`); credentials only in `.dvc/config.local`, written with `dvc remote modify --local`.
+- `dvc add --file` does not exist in DVC 3.67.1 (`unrecognized arguments: --file`), and a plain `dvc add data/raw/cds` would write its pointer inside `data/raw/`, which must stay untouched. The pointer was therefore written by hand as `dvc/raw_cds.dvc` with only `outs: - path: ../data/raw/cds`, and `dvc commit -f dvc/raw_cds.dvc` filled in the hashes and the cache. A listing of `data/raw/` (names, sizes, modification times) was identical before and after.
+- `.dvcignore` excludes `data/raw/cds/**/*_unzipped/` (extracted copies that duplicate the zip archives, written by `pipelines/01_download.py` during inspection) and `data/processed/scratch/`. The tracked raw directory has 29 files and 263,350,032 bytes: 24 data files, 4 small test downloads and `manifest.json`.
+
+## 2026-11-03: EDA and night table (Part 1)
+- ERA5-Land zip archives are always extracted from the zip into `data/processed/scratch/unzipped/<name>_<sha16>/` by `pipelines/common.py`; the pipeline never reads the `*_unzipped/` folders.
+- EDA anomaly rules and thresholds are screening choices in `configs/frost.yaml`. Flags are listed in `data/processed/anomalies.parquet`; nothing is fixed or dropped.
+- Night D is the local date of the 18:00 snapshot (22:00 UTC). Features use hours up to 22:00 UTC of D. The label window is 22:00 UTC of D to 13:00 UTC of D+1 (16 values).
+- Split by whole years of D: train 1985-2009, validation 2010-2017, test 2018-2025; 2026 is `out_of_sample_check`. The elevation proxy (mean surface pressure) and the clearness reference (95th percentile, +-7 day window) are computed on training years only.
+- The first night (1985-01-01) is dropped (no previous night). The last night (2026-10-26) is kept with a null label and `use = latest_available_night`. The label of night 2025-12-31 (test) uses hours of 2026-01-01 from the 2026 file; that is label data only.
+- AgERA5 alignment: cloud cover of D-1 for night D; the AgERA5 night minimum dated D+1 for the night starting on D (cross-check only, in `data/processed/crosschecks.parquet`).
+
+## Reproducing the data
+- `dvc pull` restores `data/raw/cds/` (the zip archives, the AgERA5 files and the manifest) and the stage outputs under `data/processed/`. The `*_unzipped/` folders are not versioned and are not needed: `pipelines/common.py` extracts each zip into `data/processed/scratch/` when it reads it.
+- `dvc repro` reruns the stages in `dvc.yaml` with `.venv/bin/python`. The stages are deterministic: a rerun of the night table gave the same SHA-256 for `features.parquet`.
