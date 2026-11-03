@@ -5,6 +5,9 @@
 - Source: ERA5-Land reanalysis (Copernicus Climate Change Service, ECMWF), dataset `reanalysis-era5-land-timeseries` from the Copernicus Climate Data Store (CDS). Reanalysis combines a weather model with assimilated observations, including satellite data; it is not raw satellite imagery.
 - One ERA5-Land grid cell (0.1 degree) per point. CDS area boxes appear to return the cells with S <= lat < N and W < lon <= E. This was inferred from two test requests and confirmed by a third, so each point uses the box [lat0 + 0.1, lon0 - 0.1, lat0, lon0] for its target cell (lat0, lon0), and the download checks that exactly that cell comes back.
 - The choice of cell matters. In July 2025 near El Alto, the hours with 2 m temperature at or below 0 C were 92, 66, 68 and 13 in four neighboring cells.
+- Cloud cover comes from a second product, AgERA5 (daily agrometeorological indicators derived from ERA5, Copernicus CDS), requested for each point's real coordinates. AgERA5 has its own 0.1 degree grid, possibly offset from the ERA5-Land cell by up to about 7 km. Its cloud cover is a 24 hour mean over the whole local day, so the night that starts on day D only uses the value of day D-1.
+- AgERA5's night minimum temperature is used only to cross-check the frost label in the EDA, never as a model feature. Its value for date D covers the night that ends on the morning of D.
+- 2026 data (up to late October) is kept out of training, validation and test. It is only an out-of-sample check and a source of nights for the replay and the manual tick.
 
 ## Future work
 

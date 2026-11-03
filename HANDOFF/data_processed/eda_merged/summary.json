@@ -1,0 +1,50 @@
+{
+  "class_balance": {
+    "train": {
+      "rows": 73040,
+      "frost_nights": 27808.0,
+      "frost_rate": 0.380723,
+      "majority_class_accuracy": 0.619277
+    },
+    "validation": {
+      "rows": 23376,
+      "frost_nights": 7839.0,
+      "frost_rate": 0.335344,
+      "majority_class_accuracy": 0.664656
+    },
+    "test": {
+      "rows": 23376,
+      "frost_nights": 7476.0,
+      "frost_rate": 0.319815,
+      "majority_class_accuracy": 0.680185
+    },
+    "out_of_sample_check": {
+      "rows": 2384,
+      "frost_nights": 940.0,
+      "frost_rate": 0.394295,
+      "majority_class_accuracy": 0.605705
+    }
+  },
+  "sign_check_corr_cloud_prev_vs_emissivity_train": 0.6762553038043282,
+  "sign_check_by_cell": {
+    "calamarca": 0.6701309238274811,
+    "caracollo": 0.6610428324625423,
+    "charana": 0.7320324247060548,
+    "corocoro": 0.6864157794044993,
+    "el_alto": 0.6568892584548666,
+    "huanuni": 0.6795701924399374,
+    "oruro": 0.6551254415232387,
+    "patacamaya": 0.6777405285327195
+  },
+  "label_vs_agera5_agreement_overall": 0.9012371443835983,
+  "confusion_label_vs_agera5": {
+    "label_0": {
+      "agera5_0": 71899,
+      "agera5_1": 4770
+    },
+    "label_1": {
+      "agera5_0": 7061,
+      "agera5_1": 36062
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "days_per_point": {
+    "el_alto": 15274,
+    "oruro": 15274,
+    "patacamaya": 15274,
+    "calamarca": 15274,
+    "caracollo": 15274,
+    "corocoro": 15274,
+    "charana": 15274,
+    "huanuni": 15274
+  },
+  "max_offset_km": 0.0,
+  "mean_tmin_corr_night_ending": 0.926859742144189,
+  "mean_tmin_corr_night_starting": 0.8163003458392222,
+  "mean_frost_flag_agreement": 0.8992670629090422
+}

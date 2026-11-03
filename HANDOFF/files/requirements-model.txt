@@ -1,0 +1,7 @@
+# Extra packages for the EDA, night table and notebooks (install on top of requirements.txt).
+# DVC 3.67.1 is used from a global install (Homebrew); it is not pinned here.
+ipykernel==7.4.0
+matplotlib==3.11.2
+nbconvert==7.17.2
+nbformat==5.11.1
+pyarrow==26.0.0

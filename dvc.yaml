@@ -1,0 +1,68 @@
+# Data pipeline. Run from the project root with the .venv created from requirements*.txt.
+# Raw inputs are tracked by dvc/raw_cds.dvc. Docs and figures are small text or images kept
+# in git (cache: false); data outputs live in the DVC cache and the DagsHub remote.
+stages:
+  02a_eda_era5land:
+    cmd: .venv/bin/python pipelines/02a_eda_era5land.py
+    deps:
+      - pipelines/02a_eda_era5land.py
+      - pipelines/common.py
+      - configs/frost.yaml
+      - configs/points.yaml
+      - data/raw/cds
+    outs:
+      - data/processed/anomalies.parquet
+      - data/processed/eda_era5land
+      - docs/eda_era5land.md:
+          cache: false
+      - docs/figures/era5land_frost_rate_by_month.png:
+          cache: false
+      - docs/figures/era5land_frost_nights_by_year.png:
+          cache: false
+
+  02b_eda_agera5:
+    cmd: .venv/bin/python pipelines/02b_eda_agera5.py
+    deps:
+      - pipelines/02b_eda_agera5.py
+      - pipelines/common.py
+      - configs/frost.yaml
+      - configs/points.yaml
+      - data/raw/cds
+    outs:
+      - data/processed/eda_agera5
+      - docs/eda_agera5.md:
+          cache: false
+      - docs/figures/agera5_cloud_cover_by_month.png:
+          cache: false
+      - docs/figures/agera5_vs_era5land_tmin_el_alto.png:
+          cache: false
+
+  03_build_night_table:
+    cmd: .venv/bin/python pipelines/03_build_night_table.py
+    deps:
+      - pipelines/03_build_night_table.py
+      - pipelines/common.py
+      - configs/frost.yaml
+      - configs/points.yaml
+      - data/raw/cds
+    outs:
+      - data/processed/features.parquet
+      - data/processed/crosschecks.parquet
+      - data/processed/features_manifest.json
+
+  03b_eda_merged:
+    cmd: .venv/bin/python pipelines/03b_eda_merged.py
+    deps:
+      - pipelines/03b_eda_merged.py
+      - pipelines/common.py
+      - data/processed/features.parquet
+      - data/processed/crosschecks.parquet
+      - data/processed/features_manifest.json
+    outs:
+      - data/processed/eda_merged
+      - docs/eda_merged.md:
+          cache: false
+      - docs/figures/merged_frost_rate_by_year.png:
+          cache: false
+      - docs/figures/merged_corr_with_label_train.png:
+          cache: false
