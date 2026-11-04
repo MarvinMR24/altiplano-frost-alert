@@ -45,9 +45,8 @@ Rules:
 | Service | Started by | Purpose |
 |---|---|---|
 | backend | `docker compose up` | FastAPI on port 8000, SQLite in a named volume at `/app/var` |
-| ngrok | `docker compose --profile tunnel up` (optional) | public https tunnel to `backend:8000` on `NGROK_DOMAIN` |
-| ml | `docker compose run --rm ml python pipelines/...` only | dependencies only, code bind mounted |
 
+The ML pipeline is not in Compose either: it runs on the host with the root `.venv` (`make test`, `dvc repro`).
 The mobile app is not in Compose. It runs on the host: `cd mobile && npx expo start --web`
 for local testing, then Expo Go on the iPhone once the backend is deployed to AWS.
 
@@ -56,7 +55,7 @@ variables it needs. The backend never receives `CDS_API_KEY`.
 
 ## Internal operations
 
-A public URL (AWS or the optional ngrok tunnel) forwards every HTTP route, so replay and manual tick are not HTTP
+A public URL (AWS) forwards every HTTP route, so replay and manual tick are not HTTP
 endpoints. They run as a CLI inside the backend container:
 
 ```

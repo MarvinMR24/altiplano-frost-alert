@@ -1,0 +1,82 @@
+# Muse Spark data experiment (condition B). See reports/muse_experiment.md and docs/project-context.md 5.8.
+# Keys come from the environment only (META_API_KEY, META_API_BASE_URL); never put them here.
+model: muse-spark-1.3
+temperature: 0
+max_tokens: 4000            # per call; MUSE_MAX_TOKENS overrides
+timeout_s: 120              # one attempt per call, no retries
+seed: 42
+
+prompts:
+  anomaly_review: prompts/muse_anomaly_review_v1.txt
+  feature_proposals: prompts/muse_feature_proposals_v1.txt
+
+# Budget. Prices in USD per million tokens: VERIFY against the Meta Model API pricing page.
+budget:
+  experiment_cap_usd: 25.0
+  target_usd: 5.0
+  price_input_per_m_usd: 1.25    # verify
+  price_output_per_m_usd: 4.25   # verify
+  chars_per_token_estimate: 4    # dry-run estimate only; real counts come from the API usage field
+
+# B1: anomaly review
+anomaly_review:
+  sample_cap: 300
+  batch_size: 20
+  neighbor_hours: 3
+  confidence_min: 0.8
+  # Splits whose anomalies may be sampled. Test-year flags are never sent (test stays locked).
+  sample_splits: [train, validation]
+  # ERA5 de-accumulation artifacts: negatives this small are clipped to 0 in code, never sent.
+  clip_tiny_negatives:
+    tp_mm: 0.001
+    ssrd_wm2: 0.01
+  # Physical ranges used to accept a correction (C).
+  ranges_c:
+    t2m_c: [-40.0, 45.0]
+    d2m_c: [-60.0, 35.0]
+    skt_c: [-50.0, 70.0]
+  units:
+    t2m_c: degC
+    d2m_c: degC
+    skt_c: degC
+  names:
+    t2m_c: air temperature at 2 m
+    d2m_c: dew point temperature at 2 m
+    skt_c: skin (surface) temperature
+
+# B2: Muse proposes feature combinations, code computes them
+feature_proposals:
+  max_features: 6
+  # Cell-constant columns identify places; they are never sent and cannot be used in formulas.
+  exclude: [latitude, elevation_proxy_m]
+  functions: [min, max, abs, log1p, sqrt]
+  meanings:
+    t2m_1800_c: {unit: degC, meaning: 2 m air temperature at 18:00 local}
+    d2m_1800_c: {unit: degC, meaning: 2 m dew point at 18:00 local}
+    dewpoint_depression_1800_c: {unit: degC, meaning: air temperature minus dew point at 18:00 local}
+    rh_1800_pct: {unit: "%", meaning: relative humidity at 18:00 local}
+    wind_1800_ms: {unit: m s-1, meaning: 10 m wind speed at 18:00 local}
+    sp_1800_hpa: {unit: hPa, meaning: surface pressure at 18:00 local}
+    ssrd_1800_wm2: {unit: W m-2, meaning: downward shortwave radiation in the hour ending 18:00 local}
+    strd_1800_wm2: {unit: W m-2, meaning: downward longwave radiation in the hour ending 18:00 local}
+    ssrd_afternoon_mean_wm2: {unit: W m-2, meaning: mean downward shortwave radiation 12:00 to 17:00 local}
+    strd_afternoon_mean_wm2: {unit: W m-2, meaning: mean downward longwave radiation 12:00 to 17:00 local}
+    skt_1800_c: {unit: degC, meaning: land skin temperature at 18:00 local}
+    stl1_1800_c: {unit: degC, meaning: soil temperature 0 to 7 cm at 18:00 local}
+    precip_24h_mm: {unit: mm, meaning: total precipitation in the 24 h ending 18:00 local}
+    prev_night_tmin_c: {unit: degC, meaning: minimum air temperature of the previous night}
+    prev_night_frost: {unit: "0/1", meaning: 1 if the previous night minimum was at or below 0 C}
+    cooling_rate_1500_1800_c_per_h: {unit: degC h-1, meaning: air temperature change from 15:00 to 18:00 local divided by 3}
+    doy_sin: {unit: "1", meaning: sine of the day of year (seasonal cycle)}
+    doy_cos: {unit: "1", meaning: cosine of the day of year (seasonal cycle)}
+    sky_emissivity_1800: {unit: "1", meaning: downward longwave over sigma T^4 at 18:00; higher means cloudier or moister sky}
+    sky_emissivity_change_1500_1800: {unit: "1", meaning: sky emissivity at 18:00 minus at 15:00 local}
+    afternoon_clearness: {unit: "0-1", meaning: afternoon shortwave over its clear-sky reference; 1 means clear}
+    cloud_cover_prev_day: {unit: "0-1", meaning: mean cloud cover fraction of the previous day}
+
+# Pre-declared adoption rule (do not change after seeing results).
+decision_rule:
+  min_gain_pr_auc: 0.02
+  min_gain_f2: 0.02
+  reference_run: r2-LR_best-fbbf62c6
+  reference_model_version: lr-20261103-fbbf62c6

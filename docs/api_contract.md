@@ -8,8 +8,6 @@ made here first and noted in `docs/decisions.md`.
 - JSON in and out, UTF-8. Dates are `YYYY-MM-DD` (night date, local), timestamps ISO 8601 UTC.
 - Every endpoint requires `Authorization: Bearer <session_token>`, except `GET /health`,
   `POST /auth/email/request` and `POST /auth/email/verify` (login purpose).
-- The mobile app sends `ngrok-skip-browser-warning: 1` on every request. The backend must
-  ignore it.
 - Errors: `{"detail": "<message>"}` with a proper status (401 no or bad token, 404 not
   found, 409 conflict, 422 validation, 429 rate limited).
 - Levels from probability `p`: `low` p < 0.3, `moderate` 0.3 <= p < 0.5, `high`

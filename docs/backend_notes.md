@@ -33,8 +33,7 @@ All additions are new fields, so existing clients keep working.
 | `DELETE /me` | user, devices, AOIs, alerts, sessions | also deliveries and auth codes. Sessions end because tokens are checked against `users`. The explanation cache is kept: it holds no personal data | |
 | Validation errors | `{"detail": "<message>"}` | FastAPI's list is turned into one string | |
 
-The mobile client (`mobile/src/api`) matches the contract: same paths, bodies and the
-`ngrok-skip-browser-warning` header, which the backend ignores.
+The mobile client (`mobile/src/api`) matches the contract: same paths and bodies.
 
 ## Conflicts with MUSE.md / CLAUDE.md (the backend follows the contract and the backend brief)
 

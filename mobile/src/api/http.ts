@@ -28,11 +28,7 @@ export class HttpApi implements Api {
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-      // Skips the ngrok free-tier interstitial page. Sent on every request.
-      'ngrok-skip-browser-warning': '1',
-    };
+    const headers: Record<string, string> = { Accept: 'application/json' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (this.token) headers.Authorization = `Bearer ${this.token}`;
 
