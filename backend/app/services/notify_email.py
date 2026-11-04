@@ -103,7 +103,9 @@ def login_code_email(to: str, code: str, language: str = "es") -> OutgoingEmail:
 def alert_email(to: str, *, language: str, aoi_name: str, level_label: str, night_date: str, explanation: dict,
                 probability_pct: int, cell_name: str, model_version: str, data_source: str, mode: str,
                 processed_at: str) -> OutgoingEmail:
-    es = language == "es"
+    from .explain import content_language
+
+    es = content_language(language) == "es"
     replay = mode == "replay"
     tag = ("[REPLAY] " if replay else "") + ("[MOCK] " if data_source == "MOCK" else "")
     if es:

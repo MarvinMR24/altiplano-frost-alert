@@ -12,9 +12,9 @@ user's areas in a few seconds, say clearly what to do, and stay honest about the
 
 ## What
 
-The screens already exist in mock mode (login, verify, onboarding, Map, Zones with polygon
-drawing, History, alert detail, Profile, change email). This spec covers the move to real data
-and the UX rules.
+The screens already exist in mock mode. This spec covers the v2 auth flow, the four
+languages, the catalog pickers, the threshold explanation, the calendar night picker, the
+custom icon set and the logo.
 
 1. Coverage from the backend: the 8 points of `configs/points.yaml` (El Alto, Oruro,
    Patacamaya, Calamarca, Caracollo, Corocoro, Charana, Huanuni) come from `GET /coverage`
@@ -22,8 +22,8 @@ and the UX rules.
    point ids and names, and every mock number stays flagged as mock.
 2. Remove any reference to places outside the coverage (for example Puno, Juliaca, Cusco,
    Potosi, La Paz presets) from screens and copy.
-3. Map: the 8 cells with their level for the selected night, a night selector from
-   `GET /nights`, tap a cell to see probability, level and conditions.
+3. Map: the 8 cells with their level for the selected night, a calendar night selector
+   from `GET /nights`, tap a cell to see probability, level and conditions.
 4. Zones: draw a polygon inside the coverage, pick a threshold of 30, 50 or 70 percent,
    choose channels (push, email). Show the cell used and its distance.
 5. Alert detail, in this order:
@@ -35,23 +35,64 @@ and the UX rules.
 6. Explanation label: "Explained with AI (Muse Spark)" when `source` is `muse`, "Automatic
    summary" when `source` is `template`.
 7. Replay alerts show a visible "Replay" tag in History and in the detail.
+8. Auth: a welcome screen (logo, tagline, language chips, create account, sign in, Google
+   and Apple buttons), a 4-step sign up (about you, account with password rules and a
+   strength meter, email code, profile), sign in with password or with a code, and forgot
+   password with email, code and new password steps. Google and Apple buttons are visual
+   only and show "coming soon".
+9. Languages: Spanish, English, Aymara ("Aymar aru") and Quechua ("Runa simi"). Aymara and
+   Quechua are partial; missing keys fall back to Spanish (see `docs/i18n_review.md`) and
+   the app shows a "partial translation" note. Alert emails and explanations exist only in
+   es and en; ay and qu users get the Spanish version.
+10. Crops (40+ items, 6 categories) and livestock (14 items) are picked with one reusable
+    searchable `CatalogPicker` (accent-insensitive search over the current language, Spanish
+    and synonyms; removable chips; grouped results; full-screen modal on phones). Old tag
+    ids are kept so existing users keep working.
+11. The default threshold is explained in the app as "Alert me from" with three plain-word
+    options and an info sheet showing the 0 to 100 bar with the level colors at the 30, 50
+    and 70 cut points. The same component is used in sign up, Profile, zone creation and
+    zone editing.
+12. The Map night selector is a compact pill (calendar icon, short localized date, pencil)
+    under the search bar, next to a small "Reanalysis" chip that explains "Reanalysis data,
+    processed nights. Not live and not a forecast." Tapping the pill opens a calendar bottom
+    sheet (Monday-first grid, month and year jump, only available nights enabled, latest night
+    marked, "Latest night" and "Cancel" buttons). The grid logic lives in the pure helper
+    `src/date/calendar.ts` with unit tests.
+13. All icons come from the custom `src/ui/icons/` set (react-native-svg, outline style,
+    `<Icon name="..." />`); Ionicons stays only for the Google and Apple brand glyphs.
+14. The logo is the detailed Altiplano night mark (`assets/logo.svg`, `logo-horizontal.svg`,
+    `logo-mono.svg`, rendered by `src/ui/logo.tsx`); PNGs are regenerated with
+    `node scripts/build-icons.mjs`.
 
 ## Test environments
 
 The app is not containerized. It is tested in two stages:
 1. Local web (now): `npx expo start --web` against the backend on `http://localhost:8000`.
-   The web build is for testing only. Maps use a schematic web stand-in
-   (`src/ui/maps.web.tsx`), the session uses `localStorage`, and push is not available.
-2. Expo Go on the iPhone (after the backend is deployed to AWS): against the public AWS URL.
-   Push is verified here.
+   The web build is for testing only. Maps use a real Leaflet base map
+   (`src/ui/maps.web.tsx`, CARTO Voyager over OpenStreetMap), the session uses
+   `localStorage`, and push is not available.
+2. Expo Go on the iPhone on the same Wi-Fi (no cloud): against
+   `http://<Mac IP>:8000` with `docker compose up` on the Mac. Push is verified here.
 
 ## UX rules
 
 - Level is never shown by color alone: always color, text and icon.
-- Every screen with risk shows "Night of dd/mm" and "Reanalysis data". Never "live", "now" or
-  "real time".
-- Spanish by default, English toggle that switches without restarting. Every key exists in
-  `es.ts` and `en.ts`.
+- Every screen with risk shows the night date and "Reanalysis data". On the Map tab the night
+  pill and the "Reanalysis" chip satisfy this; the full warning stays in the calendar sheet.
+  Never "live", "now" or "real time".
+- Maps (Map tab, zone drawing, zone detail) default to satellite imagery with place names
+  (Apple or Google hybrid on the phone, Esri World Imagery on the web) and a round layers
+  button switches to the street map; the choice is remembered per device. Shapes have a
+  light halo so they read on imagery.
+- A search bar on the Map tab and the draw screen finds towns, communities and places:
+  the 8 coverage cells first (offline), then Photon with Nominatim as fallback (no key,
+  debounced, at most one request per second, cached). Places outside the coverage are
+  dimmed; they move the camera on the Map tab (with a "no frost data" note) and cannot be
+  chosen on the draw screen. "My location" asks for foreground permission only when
+  tapped, after a short explanation, and the position is never stored or sent.
+- Spanish by default; the language selector (Español, English, Aymar aru, Runa simi)
+  switches without restarting. Every key exists in `es.ts`, `en.ts`, `ay.ts` and `qu.ts`
+  (`node scripts/check-i18n.mjs`); ay/qu fall back to Spanish per key.
 - Short sentences, no jargon on the main screens, technical detail only inside "How this was
   computed". No em dashes.
 - Every screen has loading, empty and error states with a retry action.
@@ -72,14 +113,24 @@ The app is not containerized. It is tested in two stages:
    iPhone).
 5. The alert detail shows the sections in the order above and the correct explanation label
    for `muse` and `template` (manual check with one of each).
-6. Language toggle switches every visible string; a key check script finds no key missing in
-   either dictionary.
+6. The language selector switches every visible string; the key check script finds every
+   key in all four dictionaries, with ay/qu falling back to Spanish per key.
 7. Loading, empty and error states exist for Map, Zones, History and alert detail (manual
    check with the backend stopped).
-8. "Delete my data" in Profile calls `DELETE /me`, clears the session and returns to login.
-9. `npx tsc --noEmit`, `npx expo-doctor` and `npx expo export --platform web` pass.
-10. Local web: login, onboarding, create an AOI, see the replay alert in History, open it and
-    read the explanation, with the backend running on `localhost:8000`.
-11. After the AWS deploy, the full demo flow works on the builder's iPhone in Expo Go: login,
+8. "Delete my data" in Profile calls `DELETE /me`, clears the session and returns to the
+   welcome screen.
+9. `npx tsc --noEmit`, `npx expo-doctor` and `npx expo export --platform web` pass, plus
+   `node scripts/check-i18n.mjs` and `node scripts/unit-tests.mjs`.
+10. Local web: welcome, create account through the four steps, sign out, sign in with
+    password, sign in with code, forgot password, crop and livestock search, threshold info
+    sheet, calendar jump to 2024-08-17 and back to the latest night, with the backend
+    running on `localhost:8000` and in mock mode.
+11. On the builder's iPhone in Expo Go on the same Wi-Fi: welcome, create account,
     onboarding, create an AOI, receive the replay alert by push, open it, read the
     explanation.
+12. Alert detail shows a "Replay" tag when the payload carries `mode: "replay"` and an
+    explanation label from the optional `explanation_source` (`muse` or `template`).
+    Mock data provides both sources for manual checks. Note: the backend detail
+    endpoint already sends `mode`, but the alerts list does not, so the History tag
+    only appears when the summary carries it; `explanation_source` is not exposed by
+    the backend yet, so real alerts fall back to the template label until it is.

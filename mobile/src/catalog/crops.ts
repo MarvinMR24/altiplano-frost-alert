@@ -1,0 +1,51 @@
+// Foods grown in the South American Altiplano and its edges. Stable snake_case ids:
+// old ids (potato, quinoa, barley, broad_bean, oca, alfalfa) are kept so existing users
+// keep working. No damage thresholds or frost temperatures here.
+import type { CatalogItem } from './catalog';
+
+export const CROPS: CatalogItem[] = [
+  { id: 'potato', category: 'tuber', labels: { es: 'Papa', en: 'Potato', ay: "Ch'uqi", qu: 'Papa' }, synonyms: ['papa'], icon: 'tuber' },
+  { id: 'bitter_potato', category: 'tuber', labels: { es: 'Papa amarga', en: 'Bitter potato', ay: "Luk'i" }, synonyms: ['papa luki', 'luki'], icon: 'tuber' },
+  { id: 'chuno', category: 'tuber', labels: { es: 'Chuño', en: 'Freeze-dried potato', ay: "Ch'uñu", qu: "Ch'uñu" }, synonyms: ['chuno', 'chuño'], icon: 'tuber' },
+  { id: 'tunta', category: 'tuber', labels: { es: 'Tunta', en: 'White chuño', ay: 'Tunta', qu: 'Tunta' }, synonyms: ['tunta', 'chuño blanco'], icon: 'tuber' },
+  { id: 'oca', category: 'tuber', labels: { es: 'Oca', en: 'Oca', ay: 'Apilla', qu: 'Uqa' }, synonyms: ['apilla', 'uqa', 'oqa'], icon: 'tuber' },
+  { id: 'papalisa', category: 'tuber', labels: { es: 'Papalisa', en: 'Ulluco', ay: 'Ulluku', qu: 'Ulluku' }, synonyms: ['olluco', 'ulluco', 'ullucu'], icon: 'tuber' },
+  { id: 'isano', category: 'tuber', labels: { es: 'Isaño', en: 'Mashua', ay: 'Isañu', qu: 'Mashwa' }, synonyms: ['mashua', 'mashwa', 'isaño'], icon: 'tuber' },
+  { id: 'maca', category: 'tuber', labels: { es: 'Maca', en: 'Maca' }, synonyms: [], icon: 'tuber' },
+  { id: 'yacon', category: 'tuber', labels: { es: 'Yacón', en: 'Yacon' }, synonyms: ['yacon', 'llacón'], icon: 'tuber' },
+  { id: 'arracacha', category: 'tuber', labels: { es: 'Arracacha', en: 'Arracacha' }, synonyms: ['racacha'], icon: 'tuber' },
+  { id: 'carrot', category: 'tuber', labels: { es: 'Zanahoria', en: 'Carrot' }, synonyms: [], icon: 'tuber' },
+  { id: 'beet', category: 'tuber', labels: { es: 'Beterraga', en: 'Beet' }, synonyms: ['remolacha', 'betarraga'], icon: 'tuber' },
+  { id: 'turnip', category: 'tuber', labels: { es: 'Nabo', en: 'Turnip' }, synonyms: [], icon: 'tuber' },
+  { id: 'radish', category: 'tuber', labels: { es: 'Rábano', en: 'Radish' }, synonyms: ['rabanito'], icon: 'tuber' },
+  { id: 'quinoa', category: 'grain', labels: { es: 'Quinua', en: 'Quinoa', ay: 'Juira', qu: 'Kinwa' }, synonyms: ['quinoa', 'quinua', 'juira'], icon: 'grain' },
+  { id: 'canahua', category: 'grain', labels: { es: 'Cañahua', en: 'Kañiwa', ay: 'Qañawa', qu: 'Kañiwa' }, synonyms: ['kañiwa', 'kañawa', 'canihua'], icon: 'grain' },
+  { id: 'amaranth', category: 'grain', labels: { es: 'Amaranto', en: 'Amaranth', qu: 'Kiwicha' }, synonyms: ['kiwicha', 'coimi'], icon: 'grain' },
+  { id: 'barley', category: 'grain', labels: { es: 'Cebada', en: 'Barley', ay: 'Siwara', qu: 'Siwara' }, synonyms: [], icon: 'grain' },
+  { id: 'oats', category: 'grain', labels: { es: 'Avena', en: 'Oats' }, synonyms: [], icon: 'grain' },
+  { id: 'wheat', category: 'grain', labels: { es: 'Trigo', en: 'Wheat' }, synonyms: [], icon: 'grain' },
+  { id: 'corn', category: 'grain', labels: { es: 'Maíz', en: 'Corn' }, synonyms: ['maiz', 'choclo', 'sara'], icon: 'grain' },
+  { id: 'rye', category: 'grain', labels: { es: 'Centeno', en: 'Rye' }, synonyms: [], icon: 'grain' },
+  { id: 'broad_bean', category: 'legume', labels: { es: 'Haba', en: 'Broad bean', ay: 'Jawasa', qu: 'Hawas' }, synonyms: ['haba', 'habas'], icon: 'legume' },
+  { id: 'pea', category: 'legume', labels: { es: 'Arveja', en: 'Pea' }, synonyms: ['alverja'], icon: 'legume' },
+  { id: 'tarwi', category: 'legume', labels: { es: 'Tarwi', en: 'Andean lupin', ay: 'Tarwi', qu: 'Tarwi' }, synonyms: ['chocho', 'lupino andino'], icon: 'legume' },
+  { id: 'lentil', category: 'legume', labels: { es: 'Lenteja', en: 'Lentil' }, synonyms: [], icon: 'legume' },
+  { id: 'onion', category: 'vegetable', labels: { es: 'Cebolla', en: 'Onion' }, synonyms: [], icon: 'vegetable' },
+  { id: 'garlic', category: 'vegetable', labels: { es: 'Ajo', en: 'Garlic' }, synonyms: [], icon: 'vegetable' },
+  { id: 'lettuce', category: 'vegetable', labels: { es: 'Lechuga', en: 'Lettuce' }, synonyms: [], icon: 'vegetable' },
+  { id: 'cabbage', category: 'vegetable', labels: { es: 'Repollo', en: 'Cabbage' }, synonyms: ['col'], icon: 'vegetable' },
+  { id: 'chard', category: 'vegetable', labels: { es: 'Acelga', en: 'Chard' }, synonyms: [], icon: 'vegetable' },
+  { id: 'spinach', category: 'vegetable', labels: { es: 'Espinaca', en: 'Spinach' }, synonyms: [], icon: 'vegetable' },
+  { id: 'celery', category: 'vegetable', labels: { es: 'Apio', en: 'Celery' }, synonyms: [], icon: 'vegetable' },
+  { id: 'parsley', category: 'vegetable', labels: { es: 'Perejil', en: 'Parsley' }, synonyms: [], icon: 'vegetable' },
+  { id: 'greenhouse_tomato', category: 'vegetable', labels: { es: 'Tomate en carpa solar', en: 'Greenhouse tomato' }, synonyms: ['tomate', 'jitomate'], icon: 'vegetable' },
+  { id: 'alfalfa', category: 'forage', labels: { es: 'Alfalfa', en: 'Alfalfa' }, synonyms: [], icon: 'forage' },
+  { id: 'forage_oats', category: 'forage', labels: { es: 'Avena forrajera', en: 'Forage oats' }, synonyms: ['avena'], icon: 'forage' },
+  { id: 'forage_barley', category: 'forage', labels: { es: 'Cebada forrajera', en: 'Forage barley' }, synonyms: ['cebada'], icon: 'forage' },
+  { id: 'native_grassland', category: 'forage', labels: { es: 'Pastos nativos', en: 'Native grassland' }, synonyms: ['bofedal', 'pastos'], icon: 'forage' },
+  { id: 'ryegrass', category: 'forage', labels: { es: 'Ballico', en: 'Ryegrass' }, synonyms: ['ryegrass', 'raigrás'], icon: 'forage' },
+  { id: 'greenhouse_strawberry', category: 'greenhouse', labels: { es: 'Frutilla en carpa solar', en: 'Greenhouse strawberry' }, synonyms: ['frutilla', 'fresa'], icon: 'greenhouse' },
+  { id: 'greenhouse_mix', category: 'greenhouse', labels: { es: 'Hortalizas en carpa', en: 'Greenhouse vegetables' }, synonyms: ['hortalizas', 'verduras'], icon: 'greenhouse' },
+];
+
+export const CROP_BY_ID = new Map(CROPS.map((c) => [c.id, c]));

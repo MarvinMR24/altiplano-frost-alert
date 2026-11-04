@@ -78,3 +78,18 @@ def load_test_split(df: pd.DataFrame, *, i_confirm_final: bool = False) -> pd.Da
     if allowed not in callers:
         raise TestSetLockedError(f"load_test_split may only be called from {FINAL_EVAL_SCRIPT}")
     return df[(df["split"] == "test") & df["frost"].notna()].reset_index(drop=True)
+
+
+FINAL_REPORT = "reports/final_test_metrics.json"
+SERVING_SPLITS = ("test", "out_of_sample_check")
+
+
+def serving_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """Rows of the held-out years (test and 2026) for the serving export and the demo replay.
+
+    Allowed only after the single final evaluation has been written: by then every model choice is
+    frozen and the test metrics are fixed, so publishing scores for those nights cannot change any
+    selection. Includes the unlabeled latest night. Never use these rows to fit or select anything."""
+    if not (config.ROOT / FINAL_REPORT).exists():
+        raise TestSetLockedError(f"serving rows need {FINAL_REPORT} (run {FINAL_EVAL_SCRIPT} --i-confirm-final first)")
+    return df[df["split"].isin(SERVING_SPLITS)].reset_index(drop=True)

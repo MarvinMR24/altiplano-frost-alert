@@ -6,7 +6,7 @@ seed: 42
 muse:
   model: muse-spark-1.3
   temperature: 0
-  max_tokens: 4000
+  max_tokens: 16000
 prompt_versions:
   anomaly_review: muse_anomaly_review_v1@df2752d8
   feature_proposals: muse_feature_proposals_v1@67e154a1
@@ -111,8 +111,12 @@ features_b:
 - cloud_cover_prev_day
 - muse_f1
 - muse_f2
+- muse_f3
+- muse_f4
+- muse_f5
+- muse_f6
 data_hash_a: fbbf62c6cdf98c15222dedd608cfda3dfa86d69c8f181d96796a94b7ea206f71
-data_hash_b: ed40a7135cf2e1689eb7b778b009c6ebbb204a67c4ecfd5c164036fa06747261
+data_hash_b: 6ed6ac3c07d0f847aff7d81dd4f37c5708dc7de46c18d19d1a8047c2b4976fd6
 features_manifest_sha256: 79bab44990b5a8a28a98b5eef29972499d946f0742f32faefdcfa363aed0f8d9
 split_definition:
   train:

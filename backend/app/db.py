@@ -33,7 +33,32 @@ def init_db(engine: Engine) -> sessionmaker[Session]:
     from . import models  # noqa: F401  (registers the tables)
 
     Base.metadata.create_all(engine)
+    _migrate_users(engine)
     return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def _migrate_users(engine: Engine) -> None:
+    """Idempotent startup migration for the password auth columns.
+
+    `create_all` never adds columns to an existing SQLite file, so add the missing ones
+    with ALTER TABLE. Every row that predates the migration logged in with an email code,
+    which proves ownership of the address, so existing rows are marked verified. No data
+    is dropped.
+    """
+    from sqlalchemy import inspect, text
+
+    with engine.begin() as conn:
+        if "users" not in inspect(conn).get_table_names():
+            return
+        columns = {c["name"] for c in inspect(conn).get_columns("users")}
+        missing = {"password_hash", "phone", "email_verified"} - columns
+        if "password_hash" in missing:
+            conn.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(200)"))
+        if "phone" in missing:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR(20)"))
+        if "email_verified" in missing:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 0 NOT NULL"))
+            conn.execute(text("UPDATE users SET email_verified = 1"))
 
 
 def session_scope(factory: sessionmaker[Session]) -> Iterator[Session]:

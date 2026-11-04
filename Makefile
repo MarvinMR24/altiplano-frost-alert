@@ -1,7 +1,7 @@
 # Run from the project root. PY is the project virtualenv.
 PY := .venv/bin/python
 
-.PHONY: test lint eda features round1 round2 export muse notebooks repro sync
+.PHONY: test lint eda features round1 round2 export muse serving notebooks repro sync
 
 test:
 	$(PY) -m pytest -q
@@ -25,6 +25,10 @@ round2:
 
 export:
 	$(PY) pipelines/05b_export_artifacts.py --no-sync
+
+# Serving artifacts for the backend (needs reports/final_test_metrics.json).
+serving:
+	$(PY) pipelines/07_export_serving.py --no-sync
 
 # Muse experiment (MUSE_MOCK=1 by default; MUSE_MOCK=0 for real calls, read from cache on re-runs).
 muse:

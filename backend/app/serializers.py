@@ -16,7 +16,8 @@ def iso_utc(t: dt.datetime) -> str:
 
 
 def user_out(u: User) -> UserOut:
-    return UserOut(id=u.id, email=u.email, name=u.name, language=u.language, profile=u.profile, crops=list(u.crops or []),
+    return UserOut(id=u.id, email=u.email, name=u.name, phone=u.phone, email_verified=bool(u.email_verified),
+                   language=u.language, profile=u.profile, crops=list(u.crops or []),
                    livestock=list(u.livestock or []), default_threshold=u.default_threshold,
                    notification_email=u.notification_email, onboarded=u.onboarded)
 

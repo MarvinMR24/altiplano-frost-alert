@@ -3,14 +3,22 @@ import { getLocales } from 'expo-localization';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { Language } from '@/api/types';
+import { ay } from './ay';
 import { en } from './en';
 import { es, type TranslationKey } from './es';
+import { qu } from './qu';
 
 export type { TranslationKey };
 
-const DICTIONARIES: Record<Language, Record<TranslationKey, string>> = { es, en };
+const DICTIONARIES: Record<Language, Record<TranslationKey, string>> = { es, en, ay, qu };
 const STORAGE_KEY = 'frostwatch.language';
 export const DEFAULT_LANGUAGE: Language = 'es';
+export const LANGUAGES: { id: Language; labelKey: TranslationKey }[] = [
+  { id: 'es', labelKey: 'language.es' },
+  { id: 'en', labelKey: 'language.en' },
+  { id: 'ay', labelKey: 'language.ay' },
+  { id: 'qu', labelKey: 'language.qu' },
+];
 
 type Params = Record<string, string | number>;
 
@@ -33,6 +41,7 @@ interface I18nValue {
   t: (key: TranslationKey, params?: Params) => string;
   tOptional: (key: string, fallback: string) => string;
   formatDate: (isoDate: string) => string;
+  formatDateLong: (isoDate: string) => string;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -43,7 +52,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((stored) => {
-        if (stored === 'es' || stored === 'en') setLanguageState(stored);
+        if (stored === 'es' || stored === 'en' || stored === 'ay' || stored === 'qu') setLanguageState(stored);
       })
       .catch(() => undefined);
   }, []);
@@ -61,7 +70,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLanguage,
       t: (key, params) => translate(language, key, params),
       tOptional: (key, fallback) => translateOptional(language, key, fallback),
-      formatDate: (isoDate) => formatNightDate(isoDate, locale),
+      formatDate: (isoDate) => formatNightDate(isoDate, locale, false),
+      formatDateLong: (isoDate) => formatNightDate(isoDate, locale, true),
     };
   }, [language, setLanguage]);
 
@@ -75,12 +85,13 @@ export function useI18n(): I18nValue {
 }
 
 // Night dates are calendar dates (YYYY-MM-DD); format them without timezone shifts.
-function formatNightDate(isoDate: string, locale: string): string {
+function formatNightDate(isoDate: string, locale: string, long: boolean): string {
   const [y, m, d] = isoDate.split('-').map(Number);
   if (!y || !m || !d) return isoDate;
   try {
     return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, {
       timeZone: 'UTC',
+      weekday: long ? 'short' : undefined,
       day: 'numeric',
       month: 'short',
       year: 'numeric',

@@ -25,7 +25,11 @@ def test_saved_artifacts_keys():
     for c in cards:
         card = json.loads(c.read_text())
         assert set(model_card.REQUIRED_KEYS) <= set(card), c
-        assert card["metrics_test"] is None and "test pending" in card["status"]
+        if (config.REPORTS / "final_test_metrics.json").exists():
+            assert card["metrics_test"]["pooled"]["n"] > 0 and "test pending" not in card["status"]
+            assert card["data"]["test_status"] == "evaluated"
+        else:
+            assert card["metrics_test"] is None and "test pending" in card["status"]
         meta = json.loads((config.MODELS / card["model_version"] / "bundle_meta.json").read_text())
         assert set(bundle.REQUIRED_KEYS) <= set(meta)
     for e in config.REPORTS.glob("lr-*/lr_export.json"):

@@ -24,14 +24,18 @@ User {
   id: string
   email: string
   name: string | null
-  language: "es" | "en"
+  phone: string | null          // optional, digits, spaces and + only
+  email_verified: boolean
+  language: "es" | "en" | "ay" | "qu"
   profile: "producer" | "resident"
-  crops: string[]               // e.g. "potato", "quinoa"
-  livestock: string[]           // e.g. "llama", "sheep"
+  crops: string[]               // catalog ids, e.g. "potato", "quinoa"
+  livestock: string[]           // catalog ids, e.g. "llama", "sheep"
   default_threshold: 30 | 50 | 70
   notification_email: string    // defaults to email
   onboarded: boolean
 }
+// The password hash is never returned. Alert emails and explanations exist only in
+// es and en; ay and qu users get the Spanish version.
 
 Driver { feature: string, effect: "up" | "down", weight: number }
 
@@ -123,6 +127,38 @@ Metrics = { pr_auc, f2, precision, recall, f1, roc_auc, brier, accuracy, majorit
   the app changes the notification email.
 - Google and Apple sign-in come later (backend-driven flow, opened with
   `WebBrowser.openAuthSessionAsync`). Not part of this version.
+- `purpose` also accepts `"register"` and `"reset_password"` for the password flows below. With
+  `"register"` the request resends the sign up code only when the email has an unverified account;
+  it always returns 204.
+- Code login keeps working exactly as before and marks the email verified.
+
+### Auth (password)
+
+Password policy: at least 8 characters, at least one letter and one number.
+Passwords, hashes and codes are never logged and never appear in responses.
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| POST | /auth/register | `{name, email, password, phone?, language?}` | 202 |
+| POST | /auth/login | `{email, password}` | `{session_token, user}` |
+| POST | /auth/password/forgot | `{email}` | 202 |
+| POST | /auth/password/reset | `{email, code, new_password}` | `{session_token, user}` |
+| POST | /auth/password/change | `{current_password, new_password}` (Bearer) | 204 |
+
+- `POST /auth/register` creates the user unverified (or updates an unverified one) and
+  sends a code with purpose `"register"`. It returns 202 even when the email is already
+  verified, sending nothing new, so the endpoint does not leak which emails exist.
+- `POST /auth/email/verify` with purpose `"register"` returns `{session_token, user}` and
+  marks the email verified.
+- `POST /auth/login` returns 401 with one generic message for any wrong combination, and
+  403 `{"detail": "email_not_verified"}` when the password is right but the email is not
+  verified (a new code is sent). At most 5 failed password attempts per email per 15
+  minutes, then 429.
+- `POST /auth/password/forgot` always returns 202; it sends a code with purpose
+  `"reset_password"` only when the user exists. The code is redeemed with
+  `POST /auth/password/reset` (not with `/auth/email/verify`).
+- `POST /auth/password/change` needs the Bearer token and returns 401 when the current password
+  is wrong.
 
 ### Me and devices
 
@@ -142,6 +178,25 @@ Metrics = { pr_auc, f2, precision, recall, f1, roc_auc, brier, accuracy, majorit
 | GET | /coverage | GeoJSON `FeatureCollection` of Polygon features (one per cell, `properties.point_id`, `properties.name`) plus `meta: {radius_km}` |
 | GET | /nights | `{latest: string, available: string[]}` (ascending) |
 | GET | /map?night=YYYY-MM-DD | `{night_date, data_source, model_version, cells: Cell[]}`; without `night`, the latest |
+
+#### GET /map/{point_id}/explain?night=YYYY-MM-DD&lang=es|en|ay|qu (Bearer)
+
+Plain explanation of one place and night for the app, written by muse-spark when the user
+opens the place (template when MUSE_MOCK=1, Muse is not configured, the call fails or the
+answer fails verification). Generated from the current processed data and stored by a hash
+of the facts, so the same facts reuse the text and new or reprocessed data produce a new one.
+At most 30 Muse calls per user per hour (stored answers do not count). Muse never receives
+the place name, the date, coordinates or the observed outcome; every number is checked
+against the facts and sources come from a fixed list (no free URLs).
+
+```json
+{"point_id": "oruro", "night_date": "2024-08-17", "language": "ay", "source": "muse",
+ "headline": "...", "what_happened": "...", "what_next": "...", "actions": ["..."],
+ "sources": [{"name": "SENAMHI Bolivia", "url": "https://senamhi.gob.bo", "why": "..."}]}
+```
+
+`language` is the language of the text: for ay and qu it falls back to `es` when the
+template is used. 404 for an unknown point or night.
 
 ### Areas of interest
 

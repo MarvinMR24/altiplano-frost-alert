@@ -9,13 +9,18 @@ import {
   type Api,
   type CoverageResponse,
   type EmailCodePurpose,
+  type Language,
   type MapResponse,
   type ModelCard,
   type NightsResponse,
+  type PlaceExplanation,
+  type RegisterInput,
   type User,
   type UserPatch,
   type VerifyResponse,
 } from './types';
+
+const REQUEST_TIMEOUT_MS = 12000;
 
 // HTTP implementation of docs/api_contract.md.
 export class HttpApi implements Api {
@@ -32,15 +37,22 @@ export class HttpApi implements Api {
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (this.token) headers.Authorization = `Bearer ${this.token}`;
 
+    // Without a timeout an unreachable backend (for example after the laptop changed
+    // Wi-Fi and its IP) leaves the app on the loading screen forever.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
+        signal: controller.signal,
       });
     } catch {
       throw new ApiError(0, 'network');
+    } finally {
+      clearTimeout(timer);
     }
 
     if (!response.ok) {
@@ -53,7 +65,7 @@ export class HttpApi implements Api {
       }
       throw new ApiError(response.status, detail);
     }
-    if (response.status === 204) return undefined as T;
+    if (response.status === 204 || response.status === 202) return undefined as T;
     return (await response.json()) as T;
   }
 
@@ -72,6 +84,33 @@ export class HttpApi implements Api {
       purpose: 'notification_email',
     });
     return result.user;
+  }
+
+  register(input: RegisterInput): Promise<void> {
+    return this.request('POST', '/auth/register', input);
+  }
+
+  verifyRegister(email: string, code: string): Promise<VerifyResponse> {
+    return this.request('POST', '/auth/email/verify', { email, code, purpose: 'register' });
+  }
+
+  loginWithPassword(email: string, password: string): Promise<VerifyResponse> {
+    return this.request('POST', '/auth/login', { email, password });
+  }
+
+  forgotPassword(email: string): Promise<void> {
+    return this.request('POST', '/auth/password/forgot', { email });
+  }
+
+  resetPassword(email: string, code: string, newPassword: string): Promise<VerifyResponse> {
+    return this.request('POST', '/auth/password/reset', { email, code, new_password: newPassword });
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    return this.request('POST', '/auth/password/change', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
   }
 
   getMe(): Promise<User> {
@@ -101,6 +140,11 @@ export class HttpApi implements Api {
   getMap(night?: string): Promise<MapResponse> {
     const query = night ? `?night=${encodeURIComponent(night)}` : '';
     return this.request('GET', `/map${query}`);
+  }
+
+  getPlaceExplanation(pointId: string, night: string, lang: Language): Promise<PlaceExplanation> {
+    const query = `?night=${encodeURIComponent(night)}&lang=${lang}`;
+    return this.request('GET', `/map/${encodeURIComponent(pointId)}/explain${query}`);
   }
 
   listAois(): Promise<Aoi[]> {

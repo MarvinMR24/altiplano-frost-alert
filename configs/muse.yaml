@@ -2,8 +2,10 @@
 # Keys come from the environment only (META_API_KEY, META_API_BASE_URL); never put them here.
 model: muse-spark-1.3
 temperature: 0
-max_tokens: 4000            # per call; MUSE_MAX_TOKENS overrides
-timeout_s: 120              # one attempt per call, no retries
+# Muse Spark is a reasoning model: reasoning tokens count toward max_tokens. 4000 truncated every
+# 20-record batch (finish_reason length), so the limit is 16000.
+max_tokens: 16000           # per call; MUSE_MAX_TOKENS overrides
+timeout_s: 300              # one attempt per call, no retries
 seed: 42
 
 prompts:
@@ -12,7 +14,7 @@ prompts:
 
 # Budget. Prices in USD per million tokens: VERIFY against the Meta Model API pricing page.
 budget:
-  experiment_cap_usd: 25.0
+  experiment_cap_usd: 10.0      # hard stop set by the builder (project cap is 25)
   target_usd: 5.0
   price_input_per_m_usd: 1.25    # verify
   price_output_per_m_usd: 4.25   # verify
