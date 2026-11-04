@@ -1,7 +1,7 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polygon, Polyline, type MapPressEvent, type Region } from 'react-native-maps';
+import MapView, { Marker, Polygon, Polyline, type MapPressEvent, type Region } from '@/ui/maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, type Channels, type Threshold } from '@/api/client';

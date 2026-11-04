@@ -1,142 +1,323 @@
-# HANDOFF: Part 1 (EDA, night table, DVC)
+# HANDOFF: Part 1 and Part 2 (EDA, night table, ML module, models)
 
-Produced in an isolated copy of the project. Nothing was committed. Copy the folders as described, review, then commit yourself.
+Produced in an isolated copy of the project. Nothing was committed or pushed to git. DVC data was pushed to DagsHub. The test set (2018-2025) was never evaluated.
 
 ## Where each folder goes
-- `HANDOFF/files/` mirrors the project root: copy its contents into the root of your project (same relative paths).
-  - `docs/decisions_part1_sections.md` holds only the three sections appended to `docs/decisions.md` (DVC tracking, EDA and night table, Reproducing the data). Append them to your `docs/decisions.md` instead of copying this file.
-  - `docs/data_licenses.md` is unchanged from the version you already have.
-- `HANDOFF/data_processed/` is the content of `data/processed/` (git-ignored, do not commit). You do not need to copy it: `dvc pull` restores the same files from DagsHub.
-- `HANDOFF/README_snippet_data.md`: a section to paste into your README.
+- `HANDOFF/files/` mirrors the project root: copy its contents into the root of your project (same relative paths). It contains only files created or changed in this work. `pipelines/01_download.py` is not included (unchanged).
+  - `docs/decisions_sections_part1_part2.md`: the sections appended to `docs/decisions.md`. Append them to your file instead of copying.
+  - `docs/status_section_model.md`: the "Model" section appended to `docs/status.md`. Append it to your file.
+- `HANDOFF/dvc_tracked/`: copies of `models/` and `data/processed/` for local use only. They are DVC objects, not for git; `dvc pull` restores the same files.
+- `HANDOFF/spec_patch.md`: exact text to add or replace in MUSE.md, CLAUDE.md, docs/project-context.md and README.md (not applied).
+- `HANDOFF/README_snippet_data.md`: README section "Data and experiments (DVC + DagsHub)".
 
-## Reproducing the data
-- `dvc pull` restores `data/raw/cds/` and the stage outputs in `data/processed/`.
-- The `*_unzipped/` folders next to the raw zip files are not versioned (excluded in `.dvcignore`) and not needed: `pipelines/common.py` always extracts each zip into `data/processed/scratch/unzipped/` (also ignored) when it reads it.
-- `dvc repro` reruns all stages; they are deterministic (a rerun of the night table gave the same SHA-256 for `features.parquet`).
+## Git-tracked vs DVC-tracked
+| git | DVC (DagsHub remote) |
+|---|---|
+| `src/`, `pipelines/`, `tests/`, `tools/`, `configs/`, `notebooks/` (executed + HTML), `docs/`, `reports/`, `experiments/` | `data/raw/cds/` (pointer `dvc/raw_cds.dvc`) |
+| `dvc/raw_cds.dvc`, `dvc.yaml`, `dvc.lock`, `.dvc/config`, `.dvc/.gitignore`, `.dvcignore` | `data/processed/` (stage outputs, including `predictions/`) |
+| `pyproject.toml`, `Makefile`, `requirements-model.txt` | `models/<model_version>/` (model.joblib, bundle_meta.json) |
+
+## .gitignore lines to add or check
+```
+data/
+models/
+.dvc/config.local
+.dvc/cache
+.dvc/tmp
+src/*.egg-info/
+__pycache__/
+```
+Make sure these are NOT ignored: `reports/`, `experiments/`, `dvc/*.dvc`, `dvc.yaml`, `dvc.lock`, `.dvc/config`, `.dvc/.gitignore`, `.dvcignore`. Your current `.gitignore` ignores `logs/*`; `logs/model/` (pipeline logs) can stay ignored.
+
+## Files to commit
+Everything under `HANDOFF/files/` (listed below) except the two section files, which you merge into `docs/decisions.md` and `docs/status.md`.
 
 ## Commands
 ```
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt -r requirements-model.txt
-dvc pull                                     # raw data and processed outputs from DagsHub
-dvc repro                                    # or the stages one by one:
-.venv/bin/python pipelines/02a_eda_era5land.py
-.venv/bin/python pipelines/02b_eda_agera5.py
-.venv/bin/python pipelines/03_build_night_table.py
-.venv/bin/python pipelines/03b_eda_merged.py
-.venv/bin/python pipelines/make_notebooks.py
-.venv/bin/jupyter nbconvert --execute --to notebook --inplace notebooks/0*.ipynb
-.venv/bin/jupyter nbconvert --to html notebooks/0*.ipynb
-dvc push && dvc status -c                    # after changes
+.venv/bin/pip install -e .
+dvc pull
+make test            # 40 tests (14 leakage and integrity checks)
+make lint
+make eda             # 02a, 02b, 03b
+make features        # 03 night table
+make round1          # 04
+make round2          # 05
+make export          # 05b
+make notebooks       # build, execute, export, check
+make repro           # dvc repro of the whole chain, then dvc push and dvc status -c
+# once, at the very end, by the builder only:
+.venv/bin/python pipelines/06_final_eval.py --i-confirm-final
 ```
-To use the DagsHub remote on a new machine, set the remote credentials locally (they go to `.dvc/config.local`, never to git):
-```
-dvc remote modify --local dagshub auth basic
-dvc remote modify --local dagshub user <your DagsHub user>
-```
-then set the secret field of the http remote to your DagsHub access key with the same command (see `dvc remote modify --help`, http remote options).
+Scripts sync to DVC at the end unless `--no-sync`. `FROSTWATCH_MLFLOW=0` disables the MLflow mirror. On a new machine, set the DVC remote credentials locally with `dvc remote modify --local dagshub auth basic`, `dvc remote modify --local dagshub user <user>` and the access-key field of the http remote (see `dvc remote modify --help`); MLflow reads MLFLOW_TRACKING_URI, MLFLOW_TRACKING_USERNAME and the access-key variable from `.env`.
 
 ## Packages
-Python 3.12.13; 3.67.1 (global install).
+Python 3.12; 3.67.1 (global install).
 ```
 cdsapi==0.7.7
 ipykernel==7.4.0
+joblib==1.6.0
+lightgbm==4.7.0
 matplotlib==3.11.2
+mlflow==3.17.2
 nbconvert==7.17.2
 nbformat==5.11.1
 netCDF4==1.7.5.1.post1
 numpy==2.5.4
 pandas==3.1.0
-pyarrow==26.0.0
+pyarrow==25.0.1
+pytest==9.2.0
 python-dotenv==1.2.4
 PyYAML==6.0.3
+ruff==0.17.3
+scikit-learn==1.9.1
+scipy==1.18.1
 xarray==2026.9.0
+xgboost==3.4.1
 ```
 
-## .gitignore lines to add or check
-```
-data/
-.dvc/config.local
-.dvc/cache
-.dvc/tmp
-```
-And make sure these are NOT ignored (they must be committed): `dvc/*.dvc`, `dvc.yaml`, `dvc.lock`, `.dvc/config`, `.dvc/.gitignore`, `.dvcignore`. Note: your current `.gitignore` ignores `logs/*`; that does not affect these files.
-
-## Pointer and pipeline files to commit
-- `dvc/raw_cds.dvc` (raw CDS data: 29 files, 263,350,032 bytes)
-- `dvc.yaml`, `dvc.lock`
-- `.dvc/config` (remote URL only), `.dvc/.gitignore`, `.dvcignore`
-
-## Test downloads inside the tracked raw folder
-`data/raw/cds/` also holds 4 small test downloads, versioned in DVC with the rest but never read by the pipeline:
-- `data/raw/cds/era5land_ts/test_elalto_2025-07.nc`
-- `data/raw/cds/era5land_ts/test_elalto_2025-07_center.nc`
-- `data/raw/cds/era5land_ts/test_elalto_2025-07_node_se.nc`
-- `data/raw/cds/agera5_ts/test_elalto_2025-07.nc`
-
-## Files in HANDOFF/files
+## Files in HANDOFF/files (size in bytes, sha256 prefix)
 | file | bytes | sha256 |
 |---|---|---|
-| `.dvc/.gitignore` | 26 | `cda3fc1a4ce9659cb19818bb065eee8c5271795484f49f314ca0357b4daec6ef` |
-| `.dvc/config` | 124 | `6582f36a34ee5ac1a33d90ecc033763cf53079efb594e93dc93e9b14d68a1c69` |
-| `.dvcignore` | 456 | `6a06f77dd02c8069b9cee36482d602bb826fc1eff83bf307031b2ce664ec6cf1` |
-| `configs/frost.yaml` | 1616 | `566ee341f4b9168d874e95259925d08ca01746fe404efe3cef8257f365cf3da2` |
-| `docs/data_licenses.md` | 1111 | `5b00304d335b795a3fd7f69505c383b2c20ef069e66d9cb10dcf3edd33772f19` |
-| `docs/decisions_part1_sections.md` | 2839 | `eb640652446fedba3e860018ec4ad7e3d3b925f599bc410deb1d72e324c12c2f` |
-| `docs/eda_agera5.md` | 5907 | `05098d334bd9adc3d87fec390814aac3085150c4d0769962e671a41b9f2608ce` |
-| `docs/eda_era5land.md` | 8731 | `2723c60a899b776d09fbbcf7a170a3d13efee3b91254cf30bb680180e1a088c1` |
-| `docs/eda_merged.md` | 7197 | `eaadd69fc5a8da229bd82c273869e53b09a923a4b7a20ddbf5ca4889273af21b` |
-| `docs/figures/agera5_cloud_cover_by_month.png` | 119700 | `aa7a44cb96a46f045b2adc7115baf1001e38f62b19a4ced19f2927fb6d4c9f4c` |
-| `docs/figures/agera5_vs_era5land_tmin_el_alto.png` | 89031 | `8508f65d1d984aaa95032fa00da015d90d375b85d5bd45ab0c7a2e80adc97f73` |
-| `docs/figures/era5land_frost_nights_by_year.png` | 142691 | `893437bcf7386ed4dcb676df8716cedd8f7d25798f6f720eeac14548afb32be5` |
-| `docs/figures/era5land_frost_rate_by_month.png` | 119236 | `0d4bc814e9584f4f7b59b7130501bd5c31a58bd8e08ea6678f1c9855059f1391` |
-| `docs/figures/merged_corr_with_label_train.png` | 65415 | `d72d9d952bd475b3fc472fde86dd3daa8df325e9e02db00f5497476741344581` |
-| `docs/figures/merged_frost_rate_by_year.png` | 55551 | `090498d7a18556db9eab98179d0c0e777448e6de5b69811e9f2897d949a6d0d8` |
-| `dvc/raw_cds.dvc` | 117 | `1ade5323bb4cbd04f2b46d12d8f2c0a3a7f66d565aa67f5b0b0fcdf14418ff04` |
-| `dvc.lock` | 4797 | `cfd3b6a798568bc6f75c79cda33617a94abadfb19f45c661270e79ce012caf36` |
-| `dvc.yaml` | 2179 | `7780df4ce311c549fa932880a2c1009b9614d8e7363a28158bd948b5dfb29d91` |
-| `notebooks/01_eda_era5land.html` | 547440 | `61499a795541d1adededc843d303ddac7488560b17b67745012c8c966be29671` |
-| `notebooks/01_eda_era5land.ipynb` | 276645 | `92d60eb2b2b934b5485c18494fa5a225aa3aeec347e5e8870ccebc7c26520199` |
-| `notebooks/02_eda_agera5.html` | 651642 | `20bd258eb20ceba6127bffd4356a515baaf338278b7ef9d2b3a97dae1b54b855` |
-| `notebooks/02_eda_agera5.ipynb` | 376313 | `52bb03003ea03b9da05b28e02ae0db7360e5e96a5f0599b293fd60e150d9426f` |
-| `notebooks/03_night_table_and_eda.html` | 433999 | `915bf6179d5cc5dcb49a7a2e958c942ef9ff94a4e442409cfbb8e210c33e3e27` |
-| `notebooks/03_night_table_and_eda.ipynb` | 166401 | `f64233ab0f0e9d8dca0e206a773ee56fd8ea2c02b24edf4fd3d6b09c4d8488a7` |
-| `pipelines/02a_eda_era5land.py` | 11682 | `2e9c5ffdc8b3cd3ab8b16a597c6fc945ed690fdac8b2d2f335b47c517fe10bd1` |
-| `pipelines/02b_eda_agera5.py` | 9819 | `f953c19391078a4f0aa7d5376e99821bf26a3ecddd04b46d3906523f4693ec37` |
-| `pipelines/03_build_night_table.py` | 10587 | `cd98f8995581562f282372bbfe8d2227ce60e0f03f1eedb00e3c0d1be89c6342` |
-| `pipelines/03b_eda_merged.py` | 9355 | `f7cba90c465f8b7180fdc692773ac66cf26c5581b5034e85fb7ed0c0ee29a355` |
-| `pipelines/common.py` | 7165 | `3cdcb9bf171ec460ea5dbcbda570461a74b71bba91265daeb16967b909ed3f7c` |
-| `pipelines/make_notebooks.py` | 6956 | `73d85729675dbfbee4d1b291fd95065f8c8da3fe412c8ac470f075c1a15f965d` |
-| `requirements-model.txt` | 259 | `2d43591e65185ec9c08382d24a291e4359c949705f04360cf7f8a19482337bf2` |
+| `.dvc/.gitignore` | 26 | `cda3fc1a4ce9659c` |
+| `.dvc/config` | 124 | `6582f36a34ee5ac1` |
+| `.dvcignore` | 556 | `a4e0a40e27ef6640` |
+| `Makefile` | 1047 | `38dd661e484298ae` |
+| `configs/features.yaml` | 3262 | `675afaea17892001` |
+| `configs/frost.yaml` | 1616 | `566ee341f4b9168d` |
+| `configs/model.yaml` | 1803 | `aa80ed116a770a33` |
+| `docs/data_licenses.md` | 1111 | `5b00304d335b795a` |
+| `docs/decisions_sections_part1_part2.md` | 4897 | `00a8649d4b448dd2` |
+| `docs/eda_agera5.md` | 5907 | `05098d334bd9adc3` |
+| `docs/eda_era5land.md` | 8731 | `2723c60a899b776d` |
+| `docs/eda_merged.md` | 7197 | `eaadd69fc5a8da22` |
+| `docs/figures/agera5_cloud_cover_by_month.png` | 119700 | `aa7a44cb96a46f04` |
+| `docs/figures/agera5_vs_era5land_tmin_el_alto.png` | 89031 | `8508f65d1d984aaa` |
+| `docs/figures/era5land_frost_nights_by_year.png` | 142691 | `893437bcf7386ed4` |
+| `docs/figures/era5land_frost_rate_by_month.png` | 119236 | `0d4bc814e9584f4f` |
+| `docs/figures/merged_corr_with_label_train.png` | 65415 | `d72d9d952bd475b3` |
+| `docs/figures/merged_frost_rate_by_year.png` | 55551 | `090498d7a18556db` |
+| `docs/ml_spec.md` | 7317 | `a4a8c13c0c57fef1` |
+| `docs/model_round1.md` | 7868 | `72a6085194a8a10e` |
+| `docs/model_round2.md` | 5595 | `4bd9397829ea07a5` |
+| `docs/spec_audit.md` | 4395 | `0f7ee38f09c6ec04` |
+| `docs/status_section_model.md` | 1429 | `e7f5bf4e3e5c4eb7` |
+| `dvc/raw_cds.dvc` | 117 | `1ade5323bb4cbd04` |
+| `dvc.lock` | 9344 | `e94f5d0be85fdbcd` |
+| `dvc.yaml` | 3793 | `efec5ee661c52b1d` |
+| `experiments/r1-climatology-fbbf62c6/config.yaml` | 1023 | `fad67d537c0bf528` |
+| `experiments/r1-climatology-fbbf62c6/metrics.json` | 5625 | `1f9d7430b7951a78` |
+| `experiments/r1-dewpoint_rule-fbbf62c6/config.yaml` | 1013 | `35548c61ca7eb946` |
+| `experiments/r1-dewpoint_rule-fbbf62c6/metrics.json` | 5624 | `9a62eae29246cb43` |
+| `experiments/r1-lightgbm-fbbf62c6/config.yaml` | 998 | `75d432fa2f3f595e` |
+| `experiments/r1-lightgbm-fbbf62c6/metrics.json` | 5778 | `ed30b22954c3b92b` |
+| `experiments/r1-lr_balanced-fbbf62c6/config.yaml` | 1020 | `e716facef787ed48` |
+| `experiments/r1-lr_balanced-fbbf62c6/metrics.json` | 5780 | `edbe5dca42af1644` |
+| `experiments/r1-lr_none-fbbf62c6/config.yaml` | 1008 | `d4052770abf53ac3` |
+| `experiments/r1-lr_none-fbbf62c6/metrics.json` | 5756 | `0c51ff88434506c8` |
+| `experiments/r1-majority-fbbf62c6/config.yaml` | 998 | `ecae74d1964a8143` |
+| `experiments/r1-majority-fbbf62c6/metrics.json` | 5494 | `e709d09fee5c9e09` |
+| `experiments/r1-persistence-fbbf62c6/config.yaml` | 1007 | `b1f7552c589d21e4` |
+| `experiments/r1-persistence-fbbf62c6/metrics.json` | 5594 | `f0c8bece6e8d054b` |
+| `experiments/r1-random_forest-fbbf62c6/config.yaml` | 1013 | `eca5b0865733e5f8` |
+| `experiments/r1-random_forest-fbbf62c6/metrics.json` | 5631 | `79fde75d800a551d` |
+| `experiments/r1-xgboost-fbbf62c6/config.yaml` | 995 | `93bb54965205cd4b` |
+| `experiments/r1-xgboost-fbbf62c6/metrics.json` | 5758 | `0dbb696e13991a1f` |
+| `experiments/r2-LR_best-fbbf62c6/config.yaml` | 1050 | `e8daeca79a55c01b` |
+| `experiments/r2-LR_best-fbbf62c6/metrics.json` | 6105 | `9b098afc12521130` |
+| `experiments/r2-TREE_best-fbbf62c6/config.yaml` | 1180 | `79d657140b95eb73` |
+| `experiments/r2-TREE_best-fbbf62c6/metrics.json` | 6115 | `bd201a3dc2d756f2` |
+| `notebooks/01_eda_era5land.html` | 558508 | `27b8c57c2e5e3965` |
+| `notebooks/01_eda_era5land.ipynb` | 290557 | `f31940f6cc70f342` |
+| `notebooks/02_eda_agera5.html` | 649557 | `183ca84e1600202d` |
+| `notebooks/02_eda_agera5.ipynb` | 377733 | `23a194735eb82cbe` |
+| `notebooks/03_night_table_and_eda.html` | 448946 | `34b96db497c05197` |
+| `notebooks/03_night_table_and_eda.ipynb` | 182870 | `eafb02af4e31289d` |
+| `notebooks/04_round1_models.html` | 381315 | `e7dff0193a1c25b1` |
+| `notebooks/04_round1_models.ipynb` | 102642 | `1f4e0d5404ff44a1` |
+| `notebooks/05_round2_tuning.html` | 338530 | `745850c96baf944f` |
+| `notebooks/05_round2_tuning.ipynb` | 68524 | `07d16de31d139490` |
+| `pipelines/02a_eda_era5land.py` | 681 | `a1e7737d5d9e4688` |
+| `pipelines/02b_eda_agera5.py` | 682 | `bcdddafffac69bea` |
+| `pipelines/03_build_night_table.py` | 1053 | `9375c8cea2efe66a` |
+| `pipelines/03b_eda_merged.py` | 657 | `b9a0193b4a5eb6df` |
+| `pipelines/04_round1.py` | 6074 | `1f785c1d96bb2f44` |
+| `pipelines/05_round2.py` | 12076 | `2edf195ad8d74d04` |
+| `pipelines/05b_export_artifacts.py` | 7651 | `32cc851a5dd4b2a2` |
+| `pipelines/06_final_eval.py` | 2324 | `8e1387eecb08a1c9` |
+| `pipelines/make_notebooks.py` | 8012 | `9efca3d182d5f242` |
+| `pyproject.toml` | 837 | `d203c4652391bf0e` |
+| `reports/README.md` | 1085 | `256814ed72a3827c` |
+| `reports/lightgbm-20261103-fbbf62c6/features.json` | 628 | `f76de34ede8da701` |
+| `reports/lightgbm-20261103-fbbf62c6/figures/reliability.png` | 34136 | `754ce3e8aae8867a` |
+| `reports/lightgbm-20261103-fbbf62c6/metrics_validation.csv` | 580 | `e0b910b35cc1cfee` |
+| `reports/lightgbm-20261103-fbbf62c6/metrics_validation.json` | 882 | `836a623d85b16ff1` |
+| `reports/lightgbm-20261103-fbbf62c6/model_card.json` | 4367 | `d300b813fdcba79e` |
+| `reports/lightgbm-20261103-fbbf62c6/per_cell_metrics.csv` | 2025 | `7189acaf88c3cfd3` |
+| `reports/lightgbm-20261103-fbbf62c6/reliability_bins.csv` | 673 | `a0d4c5b0fb3aac12` |
+| `reports/lightgbm-20261103-fbbf62c6/reliability_bins.json` | 1694 | `d75f592557bd3684` |
+| `reports/lightgbm-20261103-fbbf62c6/threshold.json` | 209 | `381eebe628eb1da5` |
+| `reports/lr-20261103-fbbf62c6/coefficients.csv` | 1793 | `92bdc022ea619c13` |
+| `reports/lr-20261103-fbbf62c6/features.json` | 628 | `f76de34ede8da701` |
+| `reports/lr-20261103-fbbf62c6/figures/reliability.png` | 33804 | `ab7b2ba691a7cadc` |
+| `reports/lr-20261103-fbbf62c6/lr_export.json` | 5149 | `b1dac170aec4753a` |
+| `reports/lr-20261103-fbbf62c6/metrics_validation.csv` | 579 | `7f82278581a7fc1a` |
+| `reports/lr-20261103-fbbf62c6/metrics_validation.json` | 881 | `45e21fd44948c3ef` |
+| `reports/lr-20261103-fbbf62c6/model_card.json` | 4416 | `cf4170e408fb7470` |
+| `reports/lr-20261103-fbbf62c6/per_cell_metrics.csv` | 2023 | `635b2f3f47f88faf` |
+| `reports/lr-20261103-fbbf62c6/reliability_bins.csv` | 676 | `56547a277bdef9f2` |
+| `reports/lr-20261103-fbbf62c6/reliability_bins.json` | 1697 | `24414a73a75fe9c3` |
+| `reports/lr-20261103-fbbf62c6/threshold.json` | 209 | `c02eab17556b787a` |
+| `reports/mlflow_links.json` | 1526 | `ff61f34dc7f0586f` |
+| `reports/round1/comparison_macro.csv` | 1868 | `bdb09fb6381863ec` |
+| `reports/round1/comparison_macro.json` | 3499 | `545906464c252fac` |
+| `reports/round1/comparison_macro.md` | 1156 | `80e527a1e7803d41` |
+| `reports/round1/comparison_pooled.csv` | 1996 | `f579a7fbb9a27bab` |
+| `reports/round1/comparison_pooled.json` | 3779 | `7460e9ae0e6af144` |
+| `reports/round1/comparison_pooled.md` | 1247 | `953b0df8a7dc73f1` |
+| `reports/round1/figures/pr_curves_validation.png` | 66432 | `39e3507bb13dafc3` |
+| `reports/round1/per_cell_metrics.csv` | 17299 | `fc0be7a681a57a6b` |
+| `reports/round1/runs.json` | 1188 | `9e2b91981b5cacb6` |
+| `reports/round1/skill_vs_baselines.csv` | 1008 | `9e6ed5e30f85610a` |
+| `reports/round1/skill_vs_baselines.json` | 2279 | `e725fff40dc21c4e` |
+| `reports/round1/skill_vs_baselines.md` | 730 | `7f917633b97177f0` |
+| `reports/round1/skill_vs_baselines_macro.csv` | 1015 | `fe42fb65f64b036d` |
+| `reports/round1/skill_vs_baselines_macro.json` | 2286 | `25576c398a3e42ce` |
+| `reports/round1/skill_vs_baselines_macro.md` | 729 | `3cd00fa81b5c8b95` |
+| `reports/round1/thresholds.json` | 286 | `b48cffe92f689128` |
+| `reports/round2/calibration.csv` | 364 | `58b0f67761647a15` |
+| `reports/round2/calibration.json` | 585 | `64171cc76783a8d2` |
+| `reports/round2/calibration.md` | 318 | `6f38f9d67ad5665b` |
+| `reports/round2/comparison_macro.csv` | 812 | `641afa171ce90dd0` |
+| `reports/round2/comparison_macro.json` | 1423 | `188764440d894178` |
+| `reports/round2/comparison_macro.md` | 593 | `1296ae18fb9b4ff1` |
+| `reports/round2/comparison_pooled.csv` | 871 | `fdc86f78d8afb0c8` |
+| `reports/round2/comparison_pooled.json` | 1544 | `e2d439d32529211c` |
+| `reports/round2/comparison_pooled.md` | 635 | `4e7a6f4bb1deae46` |
+| `reports/round2/finalists.md` | 788 | `f9d58ade1ee971eb` |
+| `reports/round2/gap_lr_vs_tree.json` | 278 | `ade14648d197ab50` |
+| `reports/round2/lr_coefficients.csv` | 867 | `ce84f8eda533d28b` |
+| `reports/round2/lr_grid.csv` | 6664 | `a5a96113053bac80` |
+| `reports/round2/skill_vs_baselines.csv` | 477 | `76096a38c75734dd` |
+| `reports/round2/skill_vs_baselines.json` | 990 | `11cc3f0c37177ca5` |
+| `reports/round2/skill_vs_baselines.md` | 418 | `4f3ec19791e4726a` |
+| `reports/round2/skill_vs_baselines_macro.csv` | 482 | `e978e66e2593450f` |
+| `reports/round2/skill_vs_baselines_macro.json` | 995 | `76fbcb3d32d40d32` |
+| `reports/round2/skill_vs_baselines_macro.md` | 417 | `80bfdc0b7a3226ef` |
+| `reports/round2/tree_search.csv` | 5356 | `29e071ffa471cd3c` |
+| `requirements-model.txt` | 464 | `0bbce70fc334d494` |
+| `src/frostwatch_ml/__init__.py` | 127 | `8803e048ab72adba` |
+| `src/frostwatch_ml/artifacts/__init__.py` | 28 | `c7d89fecdc6b7e40` |
+| `src/frostwatch_ml/artifacts/bundle.py` | 1960 | `7783476881a540dd` |
+| `src/frostwatch_ml/artifacts/export_lr.py` | 1773 | `9fdac19d1439e02c` |
+| `src/frostwatch_ml/artifacts/model_card.py` | 3467 | `c2526850f25a6d36` |
+| `src/frostwatch_ml/cli.py` | 1219 | `2d246aefb1e32fde` |
+| `src/frostwatch_ml/config.py` | 3463 | `dadcdb5bb679590f` |
+| `src/frostwatch_ml/dataio/__init__.py` | 25 | `51911c4e8a9ad1f7` |
+| `src/frostwatch_ml/dataio/cds_reader.py` | 3326 | `00043922c91a0107` |
+| `src/frostwatch_ml/dataio/manifest.py` | 1345 | `2ccded0e602c189e` |
+| `src/frostwatch_ml/dataio/tables.py` | 1905 | `3b79116fba52216f` |
+| `src/frostwatch_ml/eda/__init__.py` | 22 | `2d1edf8946e09d8f` |
+| `src/frostwatch_ml/eda/agera5.py` | 9712 | `fc0c52633554d318` |
+| `src/frostwatch_ml/eda/common.py` | 988 | `d84999fd75949c8e` |
+| `src/frostwatch_ml/eda/era5land.py` | 9270 | `1f4730cd062f2c00` |
+| `src/frostwatch_ml/eda/merged.py` | 9249 | `ee7d97da989f12fc` |
+| `src/frostwatch_ml/evaluation/__init__.py` | 29 | `5e5a376352c42a2d` |
+| `src/frostwatch_ml/evaluation/cells.py` | 1770 | `d30747ff56e253fc` |
+| `src/frostwatch_ml/evaluation/metrics.py` | 2774 | `09d7fd6db3b13cf7` |
+| `src/frostwatch_ml/evaluation/notebook.py` | 1795 | `0449fba22fba1259` |
+| `src/frostwatch_ml/evaluation/plots.py` | 2395 | `a3016719aabb7e92` |
+| `src/frostwatch_ml/evaluation/reports.py` | 1341 | `8081e84c66df4141` |
+| `src/frostwatch_ml/evaluation/thresholds.py` | 1470 | `3c05913065fcac1d` |
+| `src/frostwatch_ml/features/__init__.py` | 27 | `0c715519d4faf0a5` |
+| `src/frostwatch_ml/features/cloud.py` | 565 | `058222251405cd02` |
+| `src/frostwatch_ml/features/fitted.py` | 2466 | `5f5c3fd4ecf945c1` |
+| `src/frostwatch_ml/features/labels.py` | 1502 | `e31779c537fce073` |
+| `src/frostwatch_ml/features/night_table.py` | 7057 | `41615427549f8d2f` |
+| `src/frostwatch_ml/features/snapshot.py` | 3036 | `769afd38ee564ea6` |
+| `src/frostwatch_ml/inference/__init__.py` | 28 | `e70184b623cf5627` |
+| `src/frostwatch_ml/inference/predict.py` | 2596 | `7fcf76fcfe6e7a7f` |
+| `src/frostwatch_ml/leakage.py` | 3257 | `c38a3bffed68f472` |
+| `src/frostwatch_ml/models/__init__.py` | 25 | `fe6d3ddccb347678` |
+| `src/frostwatch_ml/models/base.py` | 1766 | `f6d99e8f7c973393` |
+| `src/frostwatch_ml/models/baselines.py` | 2778 | `7b1c66e9db20a9d7` |
+| `src/frostwatch_ml/models/calibration.py` | 1592 | `d47b7d583f9abead` |
+| `src/frostwatch_ml/models/logistic.py` | 1063 | `c71c021b40c2782b` |
+| `src/frostwatch_ml/models/registry.py` | 1259 | `b7b425f00104bc38` |
+| `src/frostwatch_ml/models/trees.py` | 1205 | `3fb31aea8ab541c6` |
+| `src/frostwatch_ml/prep/__init__.py` | 23 | `92f410cdfaa4e4a0` |
+| `src/frostwatch_ml/prep/physics.py` | 1068 | `a201563c09521272` |
+| `src/frostwatch_ml/prep/quality.py` | 2951 | `29b2fb7adb50b6dd` |
+| `src/frostwatch_ml/prep/units.py` | 894 | `ceb8a5fd28d2f28b` |
+| `src/frostwatch_ml/runner.py` | 5951 | `6b78e4145ea81175` |
+| `src/frostwatch_ml/splits.py` | 1554 | `e17ca9a2d2becbd4` |
+| `src/frostwatch_ml/tracking/__init__.py` | 27 | `3f9eb2189916f855` |
+| `src/frostwatch_ml/tracking/dvc_sync.py` | 2105 | `53259d196d1bbd09` |
+| `src/frostwatch_ml/tracking/mlflow_logger.py` | 3501 | `e6de6dd67e10e839` |
+| `tests/conftest.py` | 778 | `d4c97911d7ba166a` |
+| `tests/expected_hashes.json` | 985 | `03a08e8c2619b1c9` |
+| `tests/test_01_future_perturbation.py` | 2553 | `fee4a58c21a9680e` |
+| `tests/test_02_feature_allowlist.py` | 1374 | `80c317732082c88f` |
+| `tests/test_03_crosschecks_only.py` | 488 | `343e666b9b858e93` |
+| `tests/test_04_cloud_lag.py` | 764 | `32f890ad0dfd0b44` |
+| `tests/test_05_train_only_statistics.py` | 2430 | `ecf7845f65a7dba3` |
+| `tests/test_06_split_integrity.py` | 1423 | `5074ab5c1aef8b34` |
+| `tests/test_07_test_set_guard.py` | 1773 | `7748d6a3010d4600` |
+| `tests/test_08_validation_only_selection.py` | 987 | `bfa56223cb9dafc9` |
+| `tests/test_09_no_time_index_features.py` | 1310 | `33277e53201c97e9` |
+| `tests/test_10_determinism.py` | 918 | `807657a06bd3aa61` |
+| `tests/test_11_hash_regression.py` | 1053 | `ad3967a3eef41ce6` |
+| `tests/test_12_serving_parity.py` | 2615 | `03840d3d1337f67d` |
+| `tests/test_13_artifact_schema.py` | 1535 | `42efb80ef7dd8ca2` |
+| `tests/test_14_notebooks.py` | 394 | `bed741bbdc5f7919` |
+| `tools/check_notebooks.py` | 1611 | `70698b7e51d9ca28` |
 
-## Files in HANDOFF/data_processed
+## Files in HANDOFF/dvc_tracked
 | file | bytes | sha256 |
 |---|---|---|
-| `anomalies.parquet` | 389185 | `d3a78b004d8c2652d54b4c2a5b12b39419393a4f019fe3ff1dad8e06597946d7` |
-| `crosschecks.parquet` | 3096874 | `cfdb3ae3812b0d40e6794e52ee15245240fbe686e9a2e049ecf3647fc84b3727` |
-| `eda_agera5/cloud_cover_by_month.csv` | 1111 | `1c531f47998ec4b9ad60623aedb553777d225ce3275ca9d9a02737be857be76c` |
-| `eda_agera5/coverage.csv` | 888 | `1cd1853e0ba6fc9cc820408417bb57629ac649b8e5eb8974c020a7bea37771c1` |
-| `eda_agera5/crosschecks.csv` | 1813 | `1d45e4d493c31596c96df7430d33b82ccb9ba55945777cfea82aab7bd41de3c2` |
-| `eda_agera5/daily_crosscheck.parquet` | 4361412 | `dddde9c4ec00a5cb3e357986f74bca91ad88081b1661ef1d1eaf4e1e09a7479d` |
-| `eda_agera5/summary.json` | 392 | `80632e7d09d9096d04be01644877079a2270e449c67c9ba1a23a30e19a70b5d8` |
-| `eda_era5land/anomaly_counts.csv` | 144 | `4f5fef3a44736de792ae6b146953b4ca7d8a5210a310adffab786b721c7d4ce0` |
-| `eda_era5land/coverage.csv` | 1002 | `37eda558d4ba12a5a09b80b244cff75f588813a67dabd8f3303a1a7db94c4b40` |
-| `eda_era5land/frost_by_cell.csv` | 394 | `faf537a3ac706847ab66c45799940cf0eeae8fe990ec8e1e7977390836d0a3b6` |
-| `eda_era5land/frost_nights_by_year.csv` | 2127 | `e916df51473ab787060eb24dbbad06a7d85b142f6e28453a5a91d92fd1cb2684` |
-| `eda_era5land/frost_rate_by_month.csv` | 1974 | `51cbcf13a6a8596f145ad08b1fafdd4e2930947c850bd049c065d7fbdd138893` |
-| `eda_era5land/nights_label.parquet` | 1002380 | `b47bf2cf144a6523668609eff285acac48f0dec73360540b6ac7746950f5f543` |
-| `eda_era5land/summary.json` | 379 | `beb1db97e6e691b188e70491f1a21640ae022606e3b77a111a16aa29fe223698` |
-| `eda_era5land/trends.csv` | 580 | `a8f92d8b2a67b650fd4124ffaf47564c8ddf0cbab1fa473cad6663428da3c0cc` |
-| `eda_era5land/value_ranges.csv` | 6364 | `f168d7f2b6031c3bb5cd23feeed5281ccb1cda7f621f8a350dafb1819291d6ee` |
-| `eda_merged/class_balance.csv` | 306 | `d83a91357c384d6642bc8367f83f964ddcb16d7c76943a75b348100413f11c73` |
-| `eda_merged/corr_with_label_train.csv` | 916 | `0a80aa407d7f0d2f5f65d0735d4bf2f58f4374e74d73985aeaeb93513a18cf8e` |
-| `eda_merged/drift_std_mean_diff.csv` | 1956 | `3675f78ec0296c4bdec45d998dea0ce3ace7e62f8be8db364b2fefab814b7af5` |
-| `eda_merged/feature_means_by_split.csv` | 2228 | `c782662c8a08b7e5f528600b4bd9bc44bd0f37ad6cb27833092a24a96159263a` |
-| `eda_merged/frost_by_cell_split.csv` | 743 | `4252e505e878f55d926c3a636c95ae36ef47b60178e18c68bd3d7c25f32dd90e` |
-| `eda_merged/frost_by_month_train.csv` | 1765 | `0dd7566b3ee667a6c9598dc9b029b681ad8aed86266c78ce7f5a65fbc47015c9` |
-| `eda_merged/frost_by_year.csv` | 1039 | `8fd3d51c3e3b179f63ee51aa0b823b8ef116de77de66b42e7755ce8158c4ecf5` |
-| `eda_merged/label_vs_agera5.csv` | 799 | `26ada04a880b2f087b31db8aff4f71d177496cb2772210798ce9e3b98ea0db85` |
-| `eda_merged/missing.csv` | 72 | `1c5c2b02fad200d8a5afbd578c1ed1f76ffade1195ce5f5a6d5583c31f4dbc1f` |
-| `eda_merged/summary.json` | 1252 | `d5a14fad1257752ba68be8d62d2ba3970ddb19898fcf71286cfaff71a693afc2` |
-| `features.parquet` | 14457921 | `5a6679e27e011c9b7831795194d00a35b151299284b80666402e494c6587113e` |
-| `features_manifest.json` | 4665 | `5c2da269a1171961da685f5056dda31aacdffb80871647696e95c1222e6f701d` |
+| `data/processed/anomalies.parquet` | 389185 | `c820a877fa1545b0` |
+| `data/processed/crosschecks.parquet` | 3096874 | `fc7c512290f55be7` |
+| `data/processed/eda_agera5/cloud_cover_by_month.csv` | 1111 | `1c531f47998ec4b9` |
+| `data/processed/eda_agera5/coverage.csv` | 888 | `1cd1853e0ba6fc9c` |
+| `data/processed/eda_agera5/crosschecks.csv` | 1813 | `1d45e4d493c31596` |
+| `data/processed/eda_agera5/daily_crosscheck.parquet` | 4361412 | `fbc60e9c6e1f3f93` |
+| `data/processed/eda_agera5/summary.json` | 392 | `80632e7d09d9096d` |
+| `data/processed/eda_era5land/anomaly_counts.csv` | 144 | `4f5fef3a44736de7` |
+| `data/processed/eda_era5land/coverage.csv` | 1002 | `37eda558d4ba12a5` |
+| `data/processed/eda_era5land/frost_by_cell.csv` | 394 | `faf537a3ac706847` |
+| `data/processed/eda_era5land/frost_nights_by_year.csv` | 2127 | `e916df51473ab787` |
+| `data/processed/eda_era5land/frost_rate_by_month.csv` | 1974 | `51cbcf13a6a8596f` |
+| `data/processed/eda_era5land/nights_label.parquet` | 1002380 | `15ce14c74dadc4e3` |
+| `data/processed/eda_era5land/summary.json` | 379 | `beb1db97e6e691b1` |
+| `data/processed/eda_era5land/trends.csv` | 580 | `a8f92d8b2a67b650` |
+| `data/processed/eda_era5land/value_ranges.csv` | 6364 | `f168d7f2b6031c3b` |
+| `data/processed/eda_merged/class_balance.csv` | 306 | `d83a91357c384d66` |
+| `data/processed/eda_merged/corr_with_label_train.csv` | 916 | `0a80aa407d7f0d2f` |
+| `data/processed/eda_merged/drift_std_mean_diff.csv` | 1956 | `3675f78ec0296c4b` |
+| `data/processed/eda_merged/feature_means_by_split.csv` | 2228 | `c782662c8a08b7e5` |
+| `data/processed/eda_merged/frost_by_cell_split.csv` | 743 | `4252e505e878f55d` |
+| `data/processed/eda_merged/frost_by_month_train.csv` | 1765 | `0dd7566b3ee667a6` |
+| `data/processed/eda_merged/frost_by_year.csv` | 1039 | `8fd3d51c3e3b179f` |
+| `data/processed/eda_merged/label_vs_agera5.csv` | 799 | `26ada04a880b2f08` |
+| `data/processed/eda_merged/missing.csv` | 72 | `1c5c2b02fad200d8` |
+| `data/processed/eda_merged/summary.json` | 1252 | `d5a14fad1257752b` |
+| `data/processed/features.parquet` | 14457921 | `2c3d9e63dbeb5dca` |
+| `data/processed/features_manifest.json` | 4774 | `79bab44990b5a8a2` |
+| `data/processed/fitted_stats.json` | 72512 | `5f80f08df17e3d86` |
+| `data/processed/model_candidates.json` | 4043 | `831f826c5141dcb8` |
+| `data/processed/predictions/r1/r1-climatology-fbbf62c6.csv` | 894840 | `5993de8f611ec07f` |
+| `data/processed/predictions/r1/r1-dewpoint_rule-fbbf62c6.csv` | 981285 | `6f5c0ca1822e0fe4` |
+| `data/processed/predictions/r1/r1-lightgbm-fbbf62c6.csv` | 1022752 | `643324251499d2b8` |
+| `data/processed/predictions/r1/r1-lr_balanced-fbbf62c6.csv` | 1017468 | `437f74d63dabf179` |
+| `data/processed/predictions/r1/r1-lr_none-fbbf62c6.csv` | 1020104 | `8d9e8532781ba48a` |
+| `data/processed/predictions/r1/r1-majority-fbbf62c6.csv` | 1022742 | `e8ae7916e8d6ef06` |
+| `data/processed/predictions/r1/r1-persistence-fbbf62c6.csv` | 648726 | `0b3f71bd388dd930` |
+| `data/processed/predictions/r1/r1-random_forest-fbbf62c6.csv` | 665041 | `82227d0e81605d33` |
+| `data/processed/predictions/r1/r1-xgboost-fbbf62c6.csv` | 825465 | `d4f69aea29c7470b` |
+| `data/processed/predictions/r2/r2-LR_best-fbbf62c6.csv` | 1020262 | `6de3d762648a13dc` |
+| `data/processed/predictions/r2/r2-TREE_best-fbbf62c6.csv` | 1024487 | `809d014755e53b37` |
+| `models/lightgbm-20261103-fbbf62c6/bundle_meta.json` | 1402 | `804b41d14fcd63d5` |
+| `models/lightgbm-20261103-fbbf62c6/model.joblib` | 2811631 | `7d1499217bd8c1f0` |
+| `models/lr-20261103-fbbf62c6/bundle_meta.json` | 1426 | `0e1e9544144b6b52` |
+| `models/lr-20261103-fbbf62c6/model.joblib` | 2686 | `d6e2756df6c5b8be` |

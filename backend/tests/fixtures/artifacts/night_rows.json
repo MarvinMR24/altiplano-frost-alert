@@ -1,0 +1,14 @@
+{
+  "note": "Synthetic test fixture rows for predictions/2018-07-15.parquet (written by the tests). Not model output.",
+  "night_date": "2018-07-15",
+  "rows": [
+    {"point_id": "el_alto", "grid_lat": -16.5, "grid_lon": -68.2, "elevation_m": 1.0, "probability": 0.81},
+    {"point_id": "oruro", "grid_lat": -18.0, "grid_lon": -67.1, "elevation_m": 1.0, "probability": 0.62},
+    {"point_id": "patacamaya", "grid_lat": -17.2, "grid_lon": -67.9, "elevation_m": 1.0, "probability": 0.41},
+    {"point_id": "calamarca", "grid_lat": -17.0, "grid_lon": -68.1, "elevation_m": 1.0, "probability": 0.33},
+    {"point_id": "caracollo", "grid_lat": -17.6, "grid_lon": -67.2, "elevation_m": 1.0, "probability": 0.12},
+    {"point_id": "corocoro", "grid_lat": -17.2, "grid_lon": -69.1, "elevation_m": 1.0, "probability": 0.05},
+    {"point_id": "charana", "grid_lat": -17.6, "grid_lon": -69.4, "elevation_m": 1.0, "probability": 0.72},
+    {"point_id": "huanuni", "grid_lat": -18.3, "grid_lon": -66.8, "elevation_m": 1.0, "probability": 0.29}
+  ]
+}

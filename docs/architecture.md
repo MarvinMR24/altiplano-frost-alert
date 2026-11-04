@@ -30,7 +30,7 @@ Phase 2, after the CDS download finishes and `data/raw/cds/.lock` is gone.
 |---|---|---|---|
 | ml | CDS download, features, split, training, evaluation, Muse dataset experiment | files in `artifacts/` (see `docs/artifacts_contract.md`) | CDS reanalysis (one process, lock file) |
 | backend | users, sessions, AOIs, alerts, notifications (email, Expo push), Muse alert explanations | the HTTP API in `docs/api_contract.md` | `artifacts/` mounted read-only |
-| mobile | the Expo Go app | nothing persistent besides the session token on the device | the HTTP API only |
+| mobile | the Expo app (web for local testing, Expo Go on iPhone), run on the host, not in Docker | nothing persistent besides the session token on the device | the HTTP API only |
 
 Rules:
 1. ml publishes files into `artifacts/`. It never calls the backend.
@@ -45,16 +45,18 @@ Rules:
 | Service | Started by | Purpose |
 |---|---|---|
 | backend | `docker compose up` | FastAPI on port 8000, SQLite in a named volume at `/app/var` |
-| ngrok | `docker compose up` | public https tunnel to `backend:8000` on `NGROK_DOMAIN` |
-| mobile | `docker compose --profile mobile up mobile` | Expo dev server, best effort on macOS |
+| ngrok | `docker compose --profile tunnel up` (optional) | public https tunnel to `backend:8000` on `NGROK_DOMAIN` |
 | ml | `docker compose run --rm ml python pipelines/...` only | dependencies only, code bind mounted |
+
+The mobile app is not in Compose. It runs on the host: `cd mobile && npx expo start --web`
+for local testing, then Expo Go on the iPhone once the backend is deployed to AWS.
 
 Secrets come from `.env` through `${VAR}` substitution, and each service gets only the
 variables it needs. The backend never receives `CDS_API_KEY`.
 
 ## Internal operations
 
-The ngrok tunnel forwards every HTTP route, so replay and manual tick are not HTTP
+A public URL (AWS or the optional ngrok tunnel) forwards every HTTP route, so replay and manual tick are not HTTP
 endpoints. They run as a CLI inside the backend container:
 
 ```

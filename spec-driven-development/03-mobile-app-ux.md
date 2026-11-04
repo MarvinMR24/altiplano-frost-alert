@@ -1,7 +1,7 @@
 # Spec 03: Mobile app and UX
 
 Status: approved
-Module: `mobile/` (Expo SDK 58, Expo Router, TypeScript, Expo Go on iPhone)
+Module: `mobile/` (Expo SDK 58, Expo Router, TypeScript; runs on the host, not in Docker)
 Depends on: `docs/api_contract.md`, spec 01, spec 02
 
 ## Why
@@ -36,6 +36,15 @@ and the UX rules.
    summary" when `source` is `template`.
 7. Replay alerts show a visible "Replay" tag in History and in the detail.
 
+## Test environments
+
+The app is not containerized. It is tested in two stages:
+1. Local web (now): `npx expo start --web` against the backend on `http://localhost:8000`.
+   The web build is for testing only. Maps use a schematic web stand-in
+   (`src/ui/maps.web.tsx`), the session uses `localStorage`, and push is not available.
+2. Expo Go on the iPhone (after the backend is deployed to AWS): against the public AWS URL.
+   Push is verified here.
+
 ## UX rules
 
 - Level is never shown by color alone: always color, text and icon.
@@ -68,6 +77,9 @@ and the UX rules.
 7. Loading, empty and error states exist for Map, Zones, History and alert detail (manual
    check with the backend stopped).
 8. "Delete my data" in Profile calls `DELETE /me`, clears the session and returns to login.
-9. `npx tsc --noEmit` and `npx expo-doctor` pass.
-10. The full demo flow works on the builder's iPhone in Expo Go: login, onboarding, create an
-    AOI, receive the replay alert by push, open it, read the explanation.
+9. `npx tsc --noEmit`, `npx expo-doctor` and `npx expo export --platform web` pass.
+10. Local web: login, onboarding, create an AOI, see the replay alert in History, open it and
+    read the explanation, with the backend running on `localhost:8000`.
+11. After the AWS deploy, the full demo flow works on the builder's iPhone in Expo Go: login,
+    onboarding, create an AOI, receive the replay alert by push, open it, read the
+    explanation.

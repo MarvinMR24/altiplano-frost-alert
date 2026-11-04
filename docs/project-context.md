@@ -15,7 +15,7 @@ Background context for the project: event, rubric, design, experiment, Meta tool
 - Muse correction is adopted only if it improves the model on the test set by a margin declared in advance (section 5.8). Otherwise the raw-data logistic regression ships, and the negative result is reported honestly.
 - Data is labeled honestly: ERA5-Land and similar are **reanalysis products** (model plus assimilated satellite and surface observations), not raw satellite images. Do not call them "satellite data" in the README without this note.
 
-**Cut now:** cloud deploy, Postgres, web fallback, Android build, 48 h horizon, Telegram, chat, agent and tool calling, Baseten or Glimmer or any open-weights path (no partner credits), MODIS LST (only if everything else is done), DVC (use data hashes), morning-after check.
+**Cut now:** cloud deploy, Postgres, web fallback, Android build, 48 h horizon, Telegram, chat, agent and tool calling, Baseten or Glimmer or any open-weights path (no partner credits), MODIS LST (only if everything else is done), (DVC is used for data and model binaries with a DagsHub remote; see CLAUDE.md), morning-after check.
 
 ## 1. Project at a glance
 
@@ -23,7 +23,7 @@ Background context for the project: event, rubric, design, experiment, Meta tool
 - **One-liner:** A mobile early-warning app that sends email and in-app alerts, generated when a night of reanalysis data is processed, when radiation frost is likely in the areas you choose across the Bolivian and Peruvian Altiplano, powered by a reproducible ML pipeline and Meta's Muse Spark for data quality analysis and plain-language explanations.
 - **Event:** Meta Global AI Developer Hackathon (Meta + Cerebral Valley). Remote, 10 days. Solo, **Indie track**. Theme: "Build for Your World".
 - **Key dates (Bolivia time, UTC-4):** deadline Wed Nov 4, 10:00 PM (9:00 PM ET). Judging Nov 4 to 8. Live finals Nov 9. Community vote winner Nov 16. X engagement closes Nov 8, 11:59 PM ET.
-- **Beneficiaries:** residents of cities (La Paz, El Alto, Oruro, Potosi, Puno, Juliaca, Cusco), towns, and producers (crops and livestock). Not only farmers.
+- **Beneficiaries:** residents and producers (crops and livestock) in the La Paz to Oruro corridor covered by the 8 ERA5-Land cells (El Alto, Oruro, Patacamaya, Calamarca, Caracollo, Corocoro, Charana, Huanuni). Not only farmers.
 
 ## 2. Working agreements
 
@@ -96,6 +96,7 @@ Chronological by **whole years**: first 60% of years for train, next 20% for val
 - **Round 1 (raw features, default settings, compared on validation):** logistic regression (with and without class weights), XGBoost, LightGBM, random forest.
 - **Round 2 (compared on validation):** tuned logistic regression (regularization strength and class weights) and the best tree model (small random search), with optional probability calibration. Fix the decision threshold on validation to maximize F2.
 - **Recommendation:** logistic regression is the production candidate: cheap, interpretable, well calibrated, trivial to run locally. Tree models are likely to match or slightly beat it on raw features, so they are reported for comparison only. This is an expectation, not a result.
+- Baselines and models are reported pooled, per cell and as the macro-average over the 8 cells, with skill against the best baseline. Calibration (sigmoid) is fitted on training years with a year-grouped CV and kept only if it lowers the validation Brier score.
 
 ### 5.6 Metrics (report on validation and test)
 - **Primary metrics for decisions:** PR-AUC and F2. F2 weights recall more, because missing a frost is worse than a false alarm.
@@ -103,7 +104,7 @@ Chronological by **whole years**: first 60% of years for train, next 20% for val
 - Keep the math light: explain each metric in one plain sentence in the README.
 
 ### 5.7 Isolated experiments
-Each experiment lives in `experiments/<run_id>/` with `config.yaml`, `metrics.json`, `predictions.csv`, the data hash, seeds and package versions. A single command reproduces it (for example `python pipelines/run_experiment.py configs/experiments/<id>.yaml`). Runs never share mutable state. A comparison script builds the final tables.
+Each experiment lives in `experiments/<run_id>/` with `config.yaml` and `metrics.json` (seed, data hash, package versions); validation predictions are DVC outputs in `data/processed/predictions/`. MLflow on DagsHub mirrors every run. A single command reproduces it (for example `python pipelines/run_experiment.py configs/experiments/<id>.yaml`). Runs never share mutable state. A comparison script builds the final tables.
 
 ### 5.8 Muse correction pipeline (added value)
 Goal: test whether Muse Spark can improve the data, and with it the logistic regression, in a way that is reproducible, cheap and easy to explain.
@@ -193,22 +194,26 @@ DATABASE_URL=sqlite:///./frostwatch.db
 DEMO_REPLAY=0
 ```
 
-`.gitignore` must include: `.env`, `.venv/`, `node_modules/`, `__pycache__/`, `data/`, `*.db`, `.muse/`, `.expo/`, `.claude/settings.local.json`, `logs/muse_cache/`, raw `logs/` files (keep only sanitized samples).
+`.gitignore` must include: `.env`, `.venv/`, `node_modules/`, `__pycache__/`, `data/`, `*.db`, `.muse/`, `.expo/`, `.claude/settings.local.json`, `logs/muse_cache/`, raw `logs/` files (keep only sanitized samples), `models/`, `.dvc/config.local`, `.dvc/cache`, `.dvc/tmp`.
 
 Repo layout:
 ```
 frostwatch-altiplano/
   README.md  CLAUDE.md  .env.example  .gitignore  requirements.txt
-  configs/       points.yaml, split.yaml, experiments/
-  pipelines/     01_download.py  02_features.py  03_split.py
-                 04_train_eval.py  05_muse_correct.py  06_compare.py  run_experiment.py
+  configs/       points.yaml, cds_datasets.yaml, frost.yaml, features.yaml, model.yaml, muse.yaml
+  pipelines/     thin CLIs: 01_download, 02a/02b EDA, 03 night table, 03b EDA, 04_round1, 05_round2, 05b_export_artifacts, 06_final_eval
+  src/frostwatch_ml/  ML package (data io, features, leakage guards, models, evaluation, artifacts, inference)
   prompts/       versioned Muse prompts
-  experiments/   <run_id>/ config.yaml metrics.json predictions.csv
+  reports/       git: model cards, lr_export.json, validation tables, figures
+  models/        DVC: model.joblib per model version
+  experiments/   git: <run_id>/ config.yaml metrics.json
+  dvc/           DVC pointer files (raw_cds.dvc); dvc.yaml, dvc.lock at the root
   src/serve/     API, tick and replay, notify, explain
   mobile/        Expo app
   docs/          decisions.md  metrics.md  status.md  muse_usage.md  architecture.md
   logs/          sample_muse_calls.jsonl
-  tests/
+  tests/         pytest leakage and integrity tests
+  tools/         check_notebooks.py
   data/          gitignored
 ```
 

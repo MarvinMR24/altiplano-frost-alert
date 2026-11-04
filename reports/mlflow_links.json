@@ -1,0 +1,17 @@
+{
+  "round1": {
+    "r1-majority-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/d4d2b55dbaa14120b675af414e67973a",
+    "r1-climatology-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/c46eda7cc0984cf6beea8462ea9d96ce",
+    "r1-persistence-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/81fd7b878213421fb7222130d0fa1526",
+    "r1-dewpoint_rule-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/928b8419406a4881bd9c3a1226d8826c",
+    "r1-lr_none-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/b557e84f6f6a4e348cb10095b5cba7e3",
+    "r1-lr_balanced-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/2459e319e7ff4c72913889d83ecb689b",
+    "r1-xgboost-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/ce5dcca96bda433cae90504e97346011",
+    "r1-lightgbm-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/ac00de685f8b46a0ac975edfe9888527",
+    "r1-random_forest-fbbf62c6": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/5beddc3598cf45468e5c673814bf9dbe"
+  },
+  "round2_finalists": {
+    "LR_best": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/7376c8f224024921a3293d771d00e25a",
+    "TREE_best": "https://dagshub.com/SNARF3/altiplano-frost.mlflow/#/experiments/0/runs/7158165ab42e4f2b9b40fdfdbea99391"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "note": "Part 1 reference (written with pyarrow 26.0.0). file_sha256 is the Part 1 file hash; content_sha256 hashes the DataFrame values, index and dtypes, so it does not depend on the parquet writer version.",
+  "files": {
+    "data/processed/features.parquet": {
+      "file_sha256": "5a6679e27e011c9b7831795194d00a35b151299284b80666402e494c6587113e",
+      "content_sha256": "fbbf62c6cdf98c15222dedd608cfda3dfa86d69c8f181d96796a94b7ea206f71",
+      "rows": 122184
+    },
+    "data/processed/anomalies.parquet": {
+      "file_sha256": "d3a78b004d8c2652d54b4c2a5b12b39419393a4f019fe3ff1dad8e06597946d7",
+      "content_sha256": "fadee237d63ebeb0b83fd58717d2730334c0267eb898e7d22f628ab5ae4842d6",
+      "rows": 43160
+    },
+    "data/processed/crosschecks.parquet": {
+      "file_sha256": "cfdb3ae3812b0d40e6794e52ee15245240fbe686e9a2e049ecf3647fc84b3727",
+      "content_sha256": "0a4ae730d5bb150b3449ae3a0e58f215eac372185f21dabb4cae789c7ef469e6",
+      "rows": 122184
+    }
+  }
+}

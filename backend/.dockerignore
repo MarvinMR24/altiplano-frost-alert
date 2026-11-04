@@ -8,5 +8,8 @@ logs/
 *.db
 artifacts/
 __pycache__
+.pytest_cache
+.ruff_cache
 .expo
 var/
+tests/

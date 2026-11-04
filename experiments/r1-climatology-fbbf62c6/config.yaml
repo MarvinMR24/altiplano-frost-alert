@@ -1,0 +1,49 @@
+run_id: r1-climatology-fbbf62c6
+round: r1
+model: climatology
+kind: climatology
+params:
+  doy_halfwidth: 7
+seed: 42
+features:
+- t2m_1800_c
+- d2m_1800_c
+- dewpoint_depression_1800_c
+- rh_1800_pct
+- wind_1800_ms
+- sp_1800_hpa
+- ssrd_1800_wm2
+- strd_1800_wm2
+- ssrd_afternoon_mean_wm2
+- strd_afternoon_mean_wm2
+- skt_1800_c
+- stl1_1800_c
+- precip_24h_mm
+- prev_night_tmin_c
+- prev_night_frost
+- cooling_rate_1500_1800_c_per_h
+- doy_sin
+- doy_cos
+- latitude
+- elevation_proxy_m
+- sky_emissivity_1800
+- sky_emissivity_change_1500_1800
+- afternoon_clearness
+- cloud_cover_prev_day
+split_definition:
+  train:
+  - 1985
+  - 2009
+  validation:
+  - 2010
+  - 2017
+  test:
+  - 2018
+  - 2025
+  out_of_sample_check:
+  - 2026
+  - 2026
+selection: fit on train, threshold and comparison on validation; test locked
+data_hash: fbbf62c6cdf98c15222dedd608cfda3dfa86d69c8f181d96796a94b7ea206f71
+features_manifest_sha256: 79bab44990b5a8a28a98b5eef29972499d946f0742f32faefdcfa363aed0f8d9
+reproduce: .venv/bin/python pipelines/04_round1.py --no-sync

@@ -1,0 +1,51 @@
+# Model selection settings (validation only; the test set is locked).
+seed: 42
+version_date: "20261103"   # fixed so `dvc repro` reruns give the same model version ids
+decision_metrics: [pr_auc, f2]
+threshold_rule: maximize F2 on validation
+level_cuts: [0.3, 0.5, 0.7]
+levels: [none, low, medium, high]   # p < 0.3, 0.3 to 0.5, 0.5 to 0.7, >= 0.7
+reliability_bins: 10
+
+round1:
+  baselines: [majority, climatology, persistence, dewpoint_rule]
+  climatology_doy_halfwidth: 7
+  models:
+    - {name: lr_none, kind: lr, params: {class_weight: null}}
+    - {name: lr_balanced, kind: lr, params: {class_weight: balanced}}
+    - {name: xgboost, kind: xgboost, params: {}}
+    - {name: lightgbm, kind: lightgbm, params: {}}
+    - {name: random_forest, kind: random_forest, params: {}}
+
+round2:
+  lr_grid:
+    C: [0.001, 0.00316, 0.01, 0.0316, 0.1, 0.316, 1.0, 3.16, 10.0, 31.6, 100.0]
+    class_weight: [null, balanced]
+    penalty: [l2, l1]
+  tree_search:
+    n_draws: 30
+    lightgbm:
+      n_estimators: [100, 200, 400, 800]
+      learning_rate: [0.01, 0.02, 0.05, 0.1]
+      num_leaves: [15, 31, 63, 127]
+      min_child_samples: [10, 20, 50, 100]
+      subsample: [0.6, 0.8, 1.0]
+      subsample_freq: [1]
+      colsample_bytree: [0.6, 0.8, 1.0]
+      reg_lambda: [0.0, 1.0, 5.0]
+    xgboost:
+      n_estimators: [100, 200, 400, 800]
+      learning_rate: [0.01, 0.02, 0.05, 0.1]
+      max_depth: [3, 4, 6, 8]
+      min_child_weight: [1, 5, 10]
+      subsample: [0.6, 0.8, 1.0]
+      colsample_bytree: [0.6, 0.8, 1.0]
+      reg_lambda: [0.0, 1.0, 5.0]
+    random_forest:
+      n_estimators: [100, 200, 400]
+      max_depth: [null, 8, 12, 16]
+      min_samples_leaf: [1, 5, 20, 50]
+      max_features: [sqrt, 0.5, 1.0]
+  calibration:
+    enabled: true
+    cv_splits: 5   # GroupKFold by year on training rows
