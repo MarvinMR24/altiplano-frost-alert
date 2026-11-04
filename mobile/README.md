@@ -98,7 +98,7 @@ read flags in memory, so the whole flow works offline: any email, any valid pass
 - Level colors go from low to very_high without green and are always paired with text
   and an icon (`levelIcons` in the theme).
 - Icons are custom (`src/ui/icons/`, `<Icon name="..." />`); Ionicons stays only for the
-  Google and Apple brand glyphs.
+  Google brand glyph.
 - The logo is a map pin (your place) holding a snowy Altiplano peak, a frost snowflake and
   a red alert dot, on a beige rounded square (`assets/logo.svg`,
   `assets/logo-horizontal.svg`, `assets/logo-mono.svg` with cut-outs for one-color system
@@ -116,10 +116,9 @@ node scripts/build-icons.mjs   # writes icon.png, splash-icon.png, favicon.png a
 Welcome (first screen) with language chips, 4-step sign up (about you, account with
 password rules and strength meter, email code, profile), sign in with password or with a
 code, forgot password (email, code, new password), change password in Profile. Password
-policy: 8+ characters, one letter, one number. Sign in with Apple (iPhone only, official
-button, verified by the backend) and with Google (system browser and a one-time ticket;
-active only when the backend has the Google settings, otherwise "coming soon"); see
-`src/auth/providers.ts` and `docs/api_contract.md`.
+policy: 8+ characters, one letter, one number. Sign in with Google (system browser and a
+one-time ticket; active only when the backend has the Google settings, otherwise "coming
+soon"); see `src/auth/providers.ts` and `docs/api_contract.md`. There is no Apple sign in.
 
 ## Android APK and app config
 
@@ -163,7 +162,7 @@ src/app/            routes (Expo Router): welcome, signup, login, verify, forgot
                     (tabs)/{index,zones,history,profile}, zones/draw, zones/[id], alerts/[id],
                     change-email, change-password
 src/api/            client.ts (entry), http.ts, mock.ts, mockData.ts, types.ts
-src/auth/           session (SecureStore; session.web.ts uses localStorage), AuthProvider, providers.ts (Google/Apple extension point)
+src/auth/           session (SecureStore; session.web.ts uses localStorage), AuthProvider, providers.ts (Google sign in)
 src/i18n/           es.ts (default, source of keys), en.ts, ay.ts, qu.ts
 src/catalog/        crops.ts (40+), livestock.ts (14), catalog.ts (labels, search)
 src/date/           calendar.ts (pure month grid, tested)

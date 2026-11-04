@@ -20,7 +20,6 @@ import {
   type AoiCreate,
   type AoiPatch,
   type Api,
-  type AppleSignInInput,
   type AuthProviders,
   type CoverageResponse,
   type Language,
@@ -197,21 +196,8 @@ export class MockApi implements Api {
   }
 
   async getAuthProviders(): Promise<AuthProviders> {
-    // Mock mode has no Google OAuth client; Apple works with any token.
-    return wait({ google: false, apple: true });
-  }
-
-  async signInWithApple(input: AppleSignInInput): Promise<VerifyResponse> {
-    const email = 'apple-user@example.com';
-    let user = this.users.get(email);
-    if (!user) {
-      user = this.newUser(email, false);
-      user.name = input.name ?? null;
-      user.language = input.language;
-      this.users.set(email, user);
-    }
-    user.email_verified = true;
-    return wait({ session_token: `mock:${email}`, user: clone(user) });
+    // Mock mode has no Google OAuth client.
+    return wait({ google: false });
   }
 
   async redeemLoginTicket(): Promise<VerifyResponse> {

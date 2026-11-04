@@ -1,5 +1,4 @@
 import datetime as dt
-import json
 from urllib.parse import parse_qs, urlparse
 
 import httpx
@@ -7,7 +6,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from app.auth.social import APPLE_ISSUER, GOOGLE_ISSUERS
+from app.auth.social import GOOGLE_ISSUERS, SocialError, verify_id_token
 from tests.conftest import last_code
 
 KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -25,7 +24,6 @@ def id_token(iss, aud, email="ana@example.com", verified=True, key=KEY, minutes=
 
 
 def with_keys(app):
-    app.state.apple_keys = lambda _token: KEY.public_key()
     app.state.google_keys = lambda _token: KEY.public_key()
     return app
 
@@ -43,40 +41,71 @@ def sclient(social_app):
 
 def test_providers_reports_google_only_when_configured(client, make_app):
     from fastapi.testclient import TestClient
-    assert client.get("/auth/providers").json() == {"google": False, "apple": True}
-    assert TestClient(make_app(**GOOGLE_ENV)).get("/auth/providers").json() == {"google": True, "apple": True}
+    assert client.get("/auth/providers").json() == {"google": False}
+    assert TestClient(make_app(**GOOGLE_ENV)).get("/auth/providers").json() == {"google": True}
 
 
-def test_apple_sign_in_creates_a_verified_user_and_reuses_it(sclient):
-    token = id_token(APPLE_ISSUER, "host.exp.Exponent", verified="true")
-    r = sclient.post("/auth/apple", json={"identity_token": token, "name": "Rosa", "language": "ay"})
-    assert r.status_code == 200, r.text
-    user = r.json()["user"]
-    assert user["email"] == "ana@example.com" and user["email_verified"] and user["name"] == "Rosa"
-    assert user["language"] == "ay" and token not in r.text
-    again = sclient.post("/auth/apple", json={"identity_token": token})
-    assert again.json()["user"]["id"] == user["id"]
-
-
-def test_apple_links_to_an_existing_unverified_password_account(sclient, social_app):
-    sclient.post("/auth/register", json={"name": "Ana", "email": "ana@example.com", "password": "secret123"})
-    r = sclient.post("/auth/apple", json={"identity_token": id_token(APPLE_ISSUER, "host.exp.Exponent")})
-    assert r.status_code == 200 and r.json()["user"]["email_verified"] is True
-    login = sclient.post("/auth/login", json={"email": "ana@example.com", "password": "secret123"})
-    assert login.status_code == 200
+CID = GOOGLE_ENV["GOOGLE_CLIENT_ID"]
 
 
 @pytest.mark.parametrize("token", [
-    id_token(APPLE_ISSUER, "com.someone.else"),
-    id_token("https://evil.example", "host.exp.Exponent"),
-    id_token(APPLE_ISSUER, "host.exp.Exponent", minutes=-5),
-    id_token(APPLE_ISSUER, "host.exp.Exponent", key=OTHER_KEY),
-    id_token(APPLE_ISSUER, "host.exp.Exponent", verified="false"),
-    id_token(APPLE_ISSUER, "host.exp.Exponent", email=None),
+    id_token(GOOGLE_ISSUERS[0], "someone-else.apps.googleusercontent.com"),
+    id_token("https://evil.example", CID),
+    id_token(GOOGLE_ISSUERS[0], CID, minutes=-5),
+    id_token(GOOGLE_ISSUERS[0], CID, key=OTHER_KEY),
 ])
-def test_apple_rejects_bad_tokens(sclient, token):
-    r = sclient.post("/auth/apple", json={"identity_token": token})
-    assert r.status_code == 401 and "session_token" not in r.text
+def test_google_id_token_checks_signature_issuer_audience_and_expiry(token):
+    with pytest.raises(SocialError):
+        verify_id_token(token, lambda _t: KEY.public_key(), [CID], GOOGLE_ISSUERS)
+
+
+def test_google_id_token_accepts_a_valid_token():
+    claims = verify_id_token(id_token(GOOGLE_ISSUERS[1], CID), lambda _t: KEY.public_key(), [CID], GOOGLE_ISSUERS)
+    assert claims["email"] == "ana@example.com"
+
+
+def _google_app(make_app, tokens):
+    app = with_keys(make_app(**GOOGLE_ENV))
+    sent = []
+
+    def handler(request):
+        sent.append(dict(parse_qs(request.content.decode())))
+        return httpx.Response(200, json={"id_token": tokens.pop(0), "access_token": "x"})
+
+    app.state.google_http = httpx.Client(transport=httpx.MockTransport(handler))
+    return app, sent
+
+
+def _google_sign_in(c, lang="es"):
+    start = c.get("/auth/google/start", params={"redirect": DEEP_LINK, "lang": lang})
+    state = parse_qs(urlparse(start.headers["location"]).query)["state"][0]
+    return c.get("/auth/google/callback", params={"state": state, "code": "auth-code"})
+
+
+def test_google_links_to_an_existing_unverified_password_account(make_app):
+    from fastapi.testclient import TestClient
+    app, _ = _google_app(make_app, [id_token(GOOGLE_ISSUERS[0], CID)])
+    c = TestClient(app, follow_redirects=False)
+    c.post("/auth/register", json={"name": "Ana", "email": "ana@example.com", "password": "secret123"})
+    ticket = parse_qs(urlparse(_google_sign_in(c).headers["location"]).query)["ticket"][0]
+    r = c.post("/auth/ticket", json={"ticket": ticket})
+    assert r.status_code == 200 and r.json()["user"]["email_verified"] is True and r.json()["user"]["name"] == "Ana"
+    assert c.post("/auth/login", json={"email": "ana@example.com", "password": "secret123"}).status_code == 200
+
+
+@pytest.mark.parametrize("token", [
+    id_token(GOOGLE_ISSUERS[0], CID, verified=False),
+    id_token(GOOGLE_ISSUERS[0], CID, email=None),
+    id_token(GOOGLE_ISSUERS[0], CID, key=OTHER_KEY),
+])
+def test_google_bad_id_token_returns_to_the_app_with_an_error(make_app, token, caplog):
+    from fastapi.testclient import TestClient
+    app, _ = _google_app(make_app, [token])
+    c = TestClient(app, follow_redirects=False)
+    with caplog.at_level("DEBUG"):
+        r = _google_sign_in(c)
+    assert r.status_code == 302 and r.headers["location"] == DEEP_LINK + "?error=failed"
+    assert token not in caplog.text and "test-secret" not in caplog.text
 
 
 def test_google_start_needs_configuration_and_an_app_redirect(sclient, make_app):
@@ -125,13 +154,6 @@ def test_google_cancel_and_bad_state(make_app):
     r = c.get("/auth/google/callback", params={"state": state, "error": "access_denied"})
     assert r.headers["location"] == DEEP_LINK + "?error=cancelled"
     assert c.get("/auth/google/callback", params={"state": "forged", "code": "x"}).status_code == 400
-
-
-def test_secret_values_not_logged(sclient, caplog):
-    token = id_token(APPLE_ISSUER, "host.exp.Exponent")
-    with caplog.at_level("DEBUG"):
-        sclient.post("/auth/apple", json={"identity_token": token + "x"})
-    assert token not in caplog.text and json.dumps(token) not in caplog.text
 
 
 def test_email_code_login_still_works(sclient, social_app):

@@ -81,13 +81,6 @@ export interface PolygonGeometry {
 // Which social sign in options the backend has configured.
 export interface AuthProviders {
   google: boolean;
-  apple: boolean;
-}
-
-export interface AppleSignInInput {
-  identity_token: string;
-  name?: string;
-  language: Language;
 }
 
 // Plain explanation of one place and night, written by Muse on request (or the template).
@@ -225,7 +218,6 @@ export interface Api {
   verifyRegister(email: string, code: string): Promise<VerifyResponse>;
   loginWithPassword(email: string, password: string): Promise<VerifyResponse>;
   getAuthProviders(): Promise<AuthProviders>;
-  signInWithApple(input: AppleSignInInput): Promise<VerifyResponse>;
   redeemLoginTicket(ticket: string): Promise<VerifyResponse>;
   forgotPassword(email: string): Promise<void>;
   resetPassword(email: string, code: string, newPassword: string): Promise<VerifyResponse>;

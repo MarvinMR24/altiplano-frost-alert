@@ -36,10 +36,10 @@ custom icon set and the logo.
    summary" when `source` is `template`.
 7. Replay alerts show a visible "Replay" tag in History and in the detail.
 8. Auth: a welcome screen (logo, tagline, language chips, create account, sign in, Google
-   and Apple buttons), a 4-step sign up (about you, account with password rules and a
-   strength meter, email code, profile), sign in with password or with a code, and forgot
-   password with email, code and new password steps. Google and Apple buttons are visual
-   only and show "coming soon".
+   button), a 4-step sign up (about you, account with password rules and a strength meter,
+   email code, profile), sign in with password or with a code, and forgot password with
+   email, code and new password steps. Sign in with Google works when the backend has the
+   Google settings and shows "coming soon" otherwise. There is no Apple sign in.
 9. Languages: Spanish, English, Aymara ("Aymar aru") and Quechua ("Runa simi"). Aymara and
    Quechua are partial; missing keys fall back to Spanish (see `docs/i18n_review.md`) and
    the app shows a "partial translation" note. Alert emails and explanations exist only in
@@ -59,7 +59,7 @@ custom icon set and the logo.
     marked, "Latest night" and "Cancel" buttons). The grid logic lives in the pure helper
     `src/date/calendar.ts` with unit tests.
 13. All icons come from the custom `src/ui/icons/` set (react-native-svg, outline style,
-    `<Icon name="..." />`); Ionicons stays only for the Google and Apple brand glyphs.
+    `<Icon name="..." />`); Ionicons stays only for the Google brand glyph.
 14. The logo is the detailed Altiplano night mark (`assets/logo.svg`, `logo-horizontal.svg`,
     `logo-mono.svg`, rendered by `src/ui/logo.tsx`); PNGs are regenerated with
     `node scripts/build-icons.mjs`.

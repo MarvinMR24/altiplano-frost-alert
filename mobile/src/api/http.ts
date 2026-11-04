@@ -7,7 +7,6 @@ import {
   type AoiCreate,
   type AoiPatch,
   type Api,
-  type AppleSignInInput,
   type AuthProviders,
   type CoverageResponse,
   type EmailCodePurpose,
@@ -104,10 +103,6 @@ export class HttpApi implements Api {
 
   getAuthProviders(): Promise<AuthProviders> {
     return this.request('GET', '/auth/providers');
-  }
-
-  signInWithApple(input: AppleSignInInput): Promise<VerifyResponse> {
-    return this.request('POST', '/auth/apple', input);
   }
 
   redeemLoginTicket(ticket: string): Promise<VerifyResponse> {

@@ -125,8 +125,8 @@ Metrics = { pr_auc, f2, precision, recall, f1, roc_auc, brier, accuracy, majorit
   both calls require the bearer token; a successful verify sets the caller's
   `notification_email` to `email` and returns `{user}` without a new session. This is how
   the app changes the notification email.
-- Google and Apple sign-in come later (backend-driven flow, opened with
-  `WebBrowser.openAuthSessionAsync`). Not part of this version.
+- Google sign in uses a backend-driven flow opened with `WebBrowser.openAuthSessionAsync`
+  (see "Auth (Google)" below).
 - `purpose` also accepts `"register"` and `"reset_password"` for the password flows below. With
   `"register"` the request resends the sign up code only when the email has an unverified account;
   it always returns 204.
@@ -160,24 +160,20 @@ Passwords, hashes and codes are never logged and never appear in responses.
 - `POST /auth/password/change` needs the Bearer token and returns 401 when the current password
   is wrong.
 
-### Auth (Apple and Google)
+### Auth (Google)
 
 | Method | Path | Body | Response |
 |---|---|---|---|
-| GET | /auth/providers | | `{google: bool, apple: bool}` |
-| POST | /auth/apple | `{identity_token, name?, language?}` | `{session_token, user}` |
+| GET | /auth/providers | | `{google: bool}` |
 | GET | /auth/google/start?redirect=<deep link>&lang= | | 302 to Google |
 | GET | /auth/google/callback?state&code | | 302 to the deep link with `ticket` (or `error=cancelled|failed`) |
 | POST | /auth/ticket | `{ticket}` | `{session_token, user}` |
 
-- Apple: the identity token is verified with Apple's public keys (issuer
-  `https://appleid.apple.com`, audience in `APPLE_AUDIENCES`, not expired, verified email).
-  401 otherwise.
 - Google is enabled only with `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `PUBLIC_BASE_URL`
   (503 on start otherwise). The deep link must start with `exp://`, `exps://` or
   `frostwatch://`. The state is signed and expires in 10 minutes; the ticket is signed,
   expires in 2 minutes and works once.
-- Accounts are matched by email; a provider sign in marks the email verified and keeps an
+- Accounts are matched by email; a Google sign in marks the email verified and keeps an
   existing password. No provider ids are stored.
 
 ### Me and devices

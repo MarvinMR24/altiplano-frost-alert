@@ -35,7 +35,6 @@ services:
       EXPO_PUSH_URL: ${EXPO_PUSH_URL:-https://exp.host/--/api/v2/push/send}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      APPLE_AUDIENCES: ${APPLE_AUDIENCES:-host.exp.Exponent}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
       DATABASE_URL: sqlite:////app/var/frostwatch.db
       DATA_PROVIDER: ${DATA_PROVIDER:-mock}

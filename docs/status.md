@@ -485,3 +485,11 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
   and ruff pass; tsc, unit tests, web and Android bundles; the Maps key appears in the
   prebuild config only when the env var is set. Not verified: an actual EAS build, the EC2
   deploy and certificates (need accounts).
+
+## Apple sign in removed (2026-11-04, uncommitted)
+
+- Builder decision: only Google sign in. Removed `/auth/apple`, the Apple token check,
+  `APPLE_AUDIENCES`, the Apple button, `expo-apple-authentication` and the `welcome.apple`
+  string; `/auth/providers` returns `{google}`. The old unused Google/Apple stubs in
+  `app/auth/providers.py` are gone. Google tests now also cover token checks, account
+  linking and secrets not logged. 116 backend tests pass.

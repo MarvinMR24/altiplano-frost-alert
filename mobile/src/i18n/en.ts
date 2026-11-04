@@ -206,7 +206,6 @@ export const en: Record<TranslationKey, string> = {
   'welcome.createAccount': 'Create account',
   'welcome.signIn': 'Sign in',
   'welcome.google': 'Continue with Google',
-  'welcome.apple': 'Continue with Apple',
   'welcome.comingSoon': 'Coming soon. Use email for now.',
 
   'signup.aboutYou': 'About you',

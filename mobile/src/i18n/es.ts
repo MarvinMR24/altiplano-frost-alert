@@ -205,7 +205,6 @@ export const es = {
   'welcome.createAccount': 'Crear cuenta',
   'welcome.signIn': 'Iniciar sesión',
   'welcome.google': 'Continuar con Google',
-  'welcome.apple': 'Continuar con Apple',
   'welcome.comingSoon': 'Próximamente. Usa el correo por ahora.',
 
   'signup.aboutYou': 'Sobre ti',

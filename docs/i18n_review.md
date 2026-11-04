@@ -195,7 +195,6 @@ runtime through `labelFor`.
 ### welcome (3)
 
 - `welcome.google`
-- `welcome.apple`
 - `welcome.comingSoon`
 
 ### signup (10)
@@ -426,7 +425,6 @@ runtime through `labelFor`.
 ### welcome (3)
 
 - `welcome.google`
-- `welcome.apple`
 - `welcome.comingSoon`
 
 ### signup (10)

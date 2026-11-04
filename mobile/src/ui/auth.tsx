@@ -15,11 +15,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import * as AppleAuthentication from 'expo-apple-authentication';
-
 import { api } from '@/api/client';
 import { useAuth } from '@/auth/AuthProvider';
-import { appleSignInAvailable } from '@/auth/providers';
 import { LANGUAGES, useI18n } from '@/i18n';
 import { Field, styles as ui } from '@/ui/components';
 import { haptic } from '@/ui/feedback';
@@ -273,26 +270,21 @@ export function useCountdown(seconds: number, activeKey: unknown): { left: numbe
   return { left, restart: () => setLeft(seconds) };
 }
 
-// Google and Apple sign in. Apple uses the official button and appears only where the
-// system offers it (iPhone). Google is live when the backend has it configured; otherwise
-// the button explains it is coming soon.
+// Sign in with Google: live when the backend has it configured; otherwise the button
+// explains it is coming soon.
 export function SocialButtons() {
   const { t } = useI18n();
-  const { signInWithApple, signInWithGoogle } = useAuth();
+  const { signInWithGoogle } = useAuth();
   const [google, setGoogle] = useState(false);
-  const [apple, setApple] = useState(false);
-  const [busy, setBusy] = useState<'google' | 'apple' | null>(null);
+  const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([api.getAuthProviders().catch(() => ({ google: false, apple: false })), appleSignInAvailable()]).then(
-      ([providers, appleHere]) => {
-        if (!alive) return;
-        setGoogle(providers.google);
-        setApple(providers.apple && appleHere);
-      },
-    );
+    api
+      .getAuthProviders()
+      .then((providers) => alive && setGoogle(providers.google))
+      .catch(() => undefined);
     return () => {
       alive = false;
     };
@@ -304,17 +296,17 @@ export function SocialButtons() {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  async function run(provider: 'google' | 'apple') {
+  async function signIn() {
     haptic.tap();
     setNotice(null);
-    setBusy(provider);
+    setBusy(true);
     try {
       // On success the auth guard swaps this screen for onboarding or the tabs.
-      await (provider === 'google' ? signInWithGoogle() : signInWithApple());
+      await signInWithGoogle();
     } catch {
       setNotice(t('social.failed'));
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -323,12 +315,12 @@ export function SocialButtons() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('welcome.google')}
-        accessibilityState={{ busy: busy === 'google' }}
-        disabled={busy !== null}
-        onPress={() => (google ? run('google') : setNotice(t('welcome.comingSoon')))}
+        accessibilityState={{ busy }}
+        disabled={busy}
+        onPress={() => (google ? signIn() : setNotice(t('welcome.comingSoon')))}
         style={({ pressed }) => [authStyles.social, authStyles.socialGoogle, pressed && { opacity: 0.8 }]}
       >
-        {busy === 'google' ? (
+        {busy ? (
           <ActivityIndicator color={colors.text} />
         ) : (
           <>
@@ -337,15 +329,6 @@ export function SocialButtons() {
           </>
         )}
       </Pressable>
-      {apple ? (
-        <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={14}
-          style={[authStyles.appleButton, busy !== null && { opacity: 0.5 }]}
-          onPress={() => (busy === null ? run('apple') : undefined)}
-        />
-      ) : null}
       {notice ? <Text style={[ui.small, { textAlign: 'center' }]}>{notice}</Text> : null}
     </View>
   );
@@ -460,7 +443,6 @@ const authStyles = StyleSheet.create({
   },
   socialGoogle: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   socialGoogleText: { color: colors.text, fontWeight: '600', fontSize: 16 },
-  appleButton: { width: '100%', height: 52 },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   langRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
