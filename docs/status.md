@@ -418,3 +418,33 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
 - Pending: the alert explainer (`explain.py`) still sends the place name and night date to
   Muse, unlike spec 02; ay and qu UI labels for the new screens fall back to Spanish.
 - To use it: rebuild the backend container (`docker compose up -d --build backend`).
+
+## Muse reply fix and Aymara/Quechua listening (2026-11-04, uncommitted)
+
+- Bug: `GET /map/{point_id}/explain` returned 500 because Muse Spark spent the whole
+  `max_tokens` (default 700) on reasoning and replied with empty content. The default is now
+  8000 (`MUSE_MAX_TOKENS`, also used by alert explanations, which were silently falling back
+  to the template), the HTTP timeout 120 s (`MUSE_TIMEOUT_S`). Empty or cut replies fall
+  back to the template, are not stored, and are logged with `finish_reason` and reasoning
+  tokens. This exceeds the spec 02 target of 400 tokens, which a reasoning model cannot meet.
+  The app waits up to 150 s for this call. 100 backend tests pass.
+- App: "Read and listen in" chips (Spanish, English, Aymara, Quechua) on the Muse card:
+  picking a language generates the text in it, shows it, then reads it aloud. Phones have
+  no Aymara or Quechua voice, so those texts are read with the Spanish voice (apostrophes
+  removed) and the app says so.
+
+## One explanation, translated (2026-11-04, uncommitted)
+
+- Place explanations are generated once per place and night in Spanish (prompt
+  `place-explain-v2` key) and translated by Muse for en, ay and qu (`place_translate_v1.txt`).
+  Translations keep the `{place}`/`{night}` placeholders, the item counts and only numbers
+  from the facts; a failed translation is stored so it is not re-sent, and the Spanish text
+  is shown. API field `translated`. 102 backend tests pass.
+
+## New logo (2026-11-04, uncommitted)
+
+- Logo replaced by design D from the builder (map pin with peak, snowflake and red dot on
+  beige): `src/ui/logo.tsx`, `assets/logo.svg`, `logo-horizontal.svg`, `logo-mono.svg`
+  (mask cut-outs), `scripts/check-logo.mjs` updated. Icons regenerated; app icon and Android
+  adaptive background are beige, the Android foreground is padded to the safe zone, splash
+  background is beige (`app.json`). New theme token `logoMountain`.
