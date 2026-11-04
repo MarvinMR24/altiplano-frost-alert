@@ -7,6 +7,7 @@ import {
   type AoiCreate,
   type AoiPatch,
   type Api,
+  type AuthProviders,
   type CoverageResponse,
   type EmailCodePurpose,
   type Language,
@@ -21,6 +22,8 @@ import {
 } from './types';
 
 const REQUEST_TIMEOUT_MS = 12000;
+// Muse reasons before it answers: a place explanation can take close to a minute.
+const EXPLAIN_TIMEOUT_MS = 150000;
 
 // HTTP implementation of docs/api_contract.md.
 export class HttpApi implements Api {
@@ -32,7 +35,7 @@ export class HttpApi implements Api {
     this.token = token;
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown, timeoutMs = REQUEST_TIMEOUT_MS): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (this.token) headers.Authorization = `Bearer ${this.token}`;
@@ -40,7 +43,7 @@ export class HttpApi implements Api {
     // Without a timeout an unreachable backend (for example after the laptop changed
     // Wi-Fi and its IP) leaves the app on the loading screen forever.
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
@@ -98,6 +101,14 @@ export class HttpApi implements Api {
     return this.request('POST', '/auth/login', { email, password });
   }
 
+  getAuthProviders(): Promise<AuthProviders> {
+    return this.request('GET', '/auth/providers');
+  }
+
+  redeemLoginTicket(ticket: string): Promise<VerifyResponse> {
+    return this.request('POST', '/auth/ticket', { ticket });
+  }
+
   forgotPassword(email: string): Promise<void> {
     return this.request('POST', '/auth/password/forgot', { email });
   }
@@ -144,7 +155,7 @@ export class HttpApi implements Api {
 
   getPlaceExplanation(pointId: string, night: string, lang: Language): Promise<PlaceExplanation> {
     const query = `?night=${encodeURIComponent(night)}&lang=${lang}`;
-    return this.request('GET', `/map/${encodeURIComponent(pointId)}/explain${query}`);
+    return this.request('GET', `/map/${encodeURIComponent(pointId)}/explain${query}`, undefined, EXPLAIN_TIMEOUT_MS);
   }
 
   listAois(): Promise<Aoi[]> {

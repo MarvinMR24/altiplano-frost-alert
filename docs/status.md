@@ -448,3 +448,48 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
   (mask cut-outs), `scripts/check-logo.mjs` updated. Icons regenerated; app icon and Android
   adaptive background are beige, the Android foreground is padded to the safe zone, splash
   background is beige (`app.json`). New theme token `logoMountain`.
+
+## Sign in with Apple and Google (2026-11-04, uncommitted)
+
+- Backend: `app/auth/social.py`, `app/routers/social.py` (`/auth/providers`, `/auth/apple`,
+  `/auth/google/start`, `/auth/google/callback`, `/auth/ticket`); RS256 verification with
+  provider keys (new dependency `cryptography==50.0.2`); accounts matched by verified email.
+  14 new tests (signed test tokens, no network), 116 pass, ruff clean.
+- App: `expo-apple-authentication` (official button, iOS only, hidden on Android) and the
+  Google flow through the system browser with a one-time ticket (`src/auth/providers.ts`).
+  The Google button stays "coming soon" until the backend has the Google settings.
+- `.env.example`: Google and Apple settings; `MUSE_MAX_TOKENS` raised to 8000.
+- Builder: rebuild the backend image (new dependency); for Google create the OAuth client
+  and a public https backend URL (see `.env.example`).
+
+## Deploy and Android (2026-11-04, uncommitted)
+
+- Backend deploy files: `docker-compose.prod.yml` (port 8000 not published, restart
+  unless-stopped, uvicorn proxy headers so rate limits see client addresses, log rotation),
+  `caddy` service under the `prod` profile in `docker-compose.yml`, `deploy/Caddyfile`
+  (HTTPS, zstd/gzip, HSTS and other headers, 1 MB body limit, 150 s read timeout for Muse),
+  `.env.production.example`, `deploy/scripts/` (sync_artifacts, sync_env, server_bootstrap,
+  deploy, backup_db) and `docs/deploy_aws.md`.
+- `docker-compose.yml` now passes APP_ENV, MUSE_MAX_TOKENS, MUSE_TIMEOUT_S,
+  MUSE_MAX_CALLS_PER_RUN, EXPO_PUSH_URL, GOOGLE_*, APPLE_AUDIENCES and RATE_LIMIT_PER_MINUTE
+  (they were not reaching the container), with defaults equal to the backend defaults where
+  an empty value would override them (MUSE_MODEL, APPLE_AUDIENCES, EXPO_PUSH_URL).
+- Production guards already in place: no start without SESSION_SECRET, no console email.
+- Mobile: `app.config.ts` replaces `app.json` (package com.marvinmr24.frostwatch, version
+  1.0.0, versionCode from ANDROID_VERSION_CODE, Google Maps key from
+  GOOGLE_MAPS_ANDROID_API_KEY, splash through the expo-splash-screen plugin as SDK 58
+  requires, expo-location permission text, EAS project id), `eas.json` (preview APK,
+  production AAB), Google Maps provider on Android in `src/ui/maps.tsx`, Expo dependencies
+  aligned with `expo install --fix`. Guide: `docs/android_build.md`.
+- Checks: compose config (default and prod) valid, port 8000 absent in prod; backend tests
+  and ruff pass; tsc, unit tests, web and Android bundles; the Maps key appears in the
+  prebuild config only when the env var is set. Not verified: an actual EAS build, the EC2
+  deploy and certificates (need accounts).
+
+## Apple sign in removed (2026-11-04, uncommitted)
+
+- Builder decision: only Google sign in. Removed `/auth/apple`, the Apple token check,
+  `APPLE_AUDIENCES`, the Apple button, `expo-apple-authentication` and the `welcome.apple`
+  string; `/auth/providers` returns `{google}`. The old unused Google/Apple stubs in
+  `app/auth/providers.py` are gone. Google tests now also cover token checks, account
+  linking and secrets not logged. 116 backend tests pass.

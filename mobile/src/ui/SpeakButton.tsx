@@ -16,8 +16,25 @@ import { colors, radius, spacing } from './theme';
 const SPANISH = Platform.OS === 'android' ? 'es-US' : 'es-MX';
 const VOICE: Record<Language, string> = { es: SPANISH, en: 'en-US', ay: SPANISH, qu: SPANISH };
 
-export function SpeakButton({ text }: { text: string }) {
-  const { t, language } = useI18n();
+// For Aymara and Quechua the phone reads with a Spanish voice; the apostrophes that mark
+// ejective and aspirated consonants (q', k'), which that voice would read as pauses, are removed.
+function forVoice(text: string, language: Language): string {
+  return language === 'ay' || language === 'qu' ? text.replace(/['’]/g, '') : text;
+}
+
+export function SpeakButton({
+  text,
+  language: textLanguage,
+  autoPlayKey,
+}: {
+  text: string;
+  // Language of `text` (defaults to the app language).
+  language?: Language;
+  // When this value changes, the text is read aloud right away (after it was generated).
+  autoPlayKey?: string | number;
+}) {
+  const { t, language: appLanguage } = useI18n();
+  const language = textLanguage ?? appLanguage;
   const [speaking, setSpeaking] = useState(false);
 
   useEffect(() => () => void Speech.stop(), []);
@@ -27,15 +44,10 @@ export function SpeakButton({ text }: { text: string }) {
     setSpeaking(false);
   }, [text]);
 
-  function toggle() {
-    haptic.tap();
-    if (speaking) {
-      Speech.stop();
-      setSpeaking(false);
-      return;
-    }
+  function start() {
+    Speech.stop();
     setSpeaking(true);
-    Speech.speak(text, {
+    Speech.speak(forVoice(text, language), {
       language: VOICE[language],
       rate: 0.9,
       onDone: () => setSpeaking(false),
@@ -43,6 +55,22 @@ export function SpeakButton({ text }: { text: string }) {
       onError: () => setSpeaking(false),
     });
   }
+
+  function toggle() {
+    haptic.tap();
+    if (speaking) {
+      Speech.stop();
+      setSpeaking(false);
+      return;
+    }
+    start();
+  }
+
+  useEffect(() => {
+    if (autoPlayKey !== undefined && text) start();
+    // Only a new key starts the reading; the text changes with it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlayKey]);
 
   return (
     <View style={{ gap: spacing.xs }}>
@@ -58,7 +86,7 @@ export function SpeakButton({ text }: { text: string }) {
         </Text>
         {speaking ? <SoundBars /> : null}
       </Pressable>
-      {language === 'ay' || language === 'qu' ? <Text style={styles.note}>{t('speech.spanishVoice')}</Text> : null}
+      {language === 'ay' || language === 'qu' ? <Text style={styles.note}>{t('speech.nativeVoiceNote')}</Text> : null}
     </View>
   );
 }

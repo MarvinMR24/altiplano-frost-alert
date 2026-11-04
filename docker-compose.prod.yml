@@ -1,0 +1,29 @@
+# Production override (AWS EC2). Use it together with the base file and the prod profile:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod up -d --build
+# Only Caddy (ports 80 and 443) is reachable from the internet; the backend listens on the
+# internal Compose network only. Never run `docker compose config` without --quiet.
+
+services:
+  backend:
+    # Port 8000 is not published in production: Caddy reaches backend:8000 internally.
+    ports: !reset []
+    restart: unless-stopped
+    # Trust X-Forwarded-For from Caddy so rate limits see the real client address. Safe here
+    # because nothing but Caddy can reach the backend.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000",
+              "--proxy-headers", "--forwarded-allow-ips", "*"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  caddy:
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in the server .env (see .env.production.example)}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

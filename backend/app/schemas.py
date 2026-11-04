@@ -96,6 +96,14 @@ class UserOut(BaseModel):
     onboarded: bool
 
 
+class TicketIn(StrictIn):
+    ticket: str = Field(min_length=20, max_length=1024)
+
+
+class AuthProvidersOut(BaseModel):
+    google: bool
+
+
 class VerifyOut(BaseModel):
     session_token: str
     user: UserOut
@@ -187,6 +195,8 @@ class PlaceExplanationOut(BaseModel):
     night_date: str
     language: Language
     source: Literal["muse", "template"]
+    # True when the text is Muse's translation of the Spanish base explanation.
+    translated: bool = False
     headline: str
     what_happened: str
     what_next: str

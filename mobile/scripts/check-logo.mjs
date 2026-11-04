@@ -13,19 +13,17 @@ function constant(name) {
   return match[1];
 }
 
-const art = { ARM: constant('ARM'), HEX: constant('HEX'), MOON: constant('MOON'), MASSIF: constant('MASSIF') };
-const files = ['logo.svg', 'logo-mono.svg', 'logo-horizontal.svg'];
+const art = { PIN: constant('PIN'), MOUNTAINS: constant('MOUNTAINS'), SNOWCAP: constant('SNOWCAP'), FLAKE: constant('FLAKE') };
+// The mono file has no snowcap (one color); the others have every part.
+const files = { 'logo.svg': Object.keys(art), 'logo-horizontal.svg': Object.keys(art), 'logo-mono.svg': ['PIN', 'MOUNTAINS', 'FLAKE'] };
 let failed = false;
-for (const file of files) {
+for (const [file, keys] of Object.entries(files)) {
   const svg = readFileSync(join(root, 'assets', file), 'utf8');
-  const arms = [...svg.matchAll(/d="(M11 0H48[^"]*)"/g)].map((m) => m[1]);
-  const problems = [];
-  if (arms.length !== 6 || arms.some((d) => d !== art.ARM)) problems.push(`snowflake arms differ (${arms.length} found)`);
-  for (const key of ['HEX', 'MOON', 'MASSIF']) if (!svg.includes(art[key])) problems.push(`${key} path missing`);
-  if (problems.length) {
+  const missing = keys.filter((key) => !svg.includes(art[key]));
+  if (missing.length) {
     failed = true;
-    console.error(`${file}: ${problems.join('; ')}`);
+    console.error(`${file}: missing ${missing.join(', ')}`);
   }
 }
 if (failed) process.exit(1);
-console.log(`logo in sync (${files.length} files)`);
+console.log(`logo in sync (${Object.keys(files).length} files)`);

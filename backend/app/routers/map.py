@@ -53,6 +53,7 @@ def explain_place(point_id: str, request: Request,
                                      lang or user.language or "es", request.app.state.limiter, user.id)
     p = result.payload
     return PlaceExplanationOut(point_id=point_id, night_date=d.isoformat(), language=result.language,
-                               source=result.source, headline=p["headline"], what_happened=p["what_happened"],
+                               source=result.source, translated=result.translated, headline=p["headline"],
+                               what_happened=p["what_happened"],
                                what_next=p["what_next"], actions=p["actions"],
                                sources=[SourceOut(**s) for s in p["sources"]])

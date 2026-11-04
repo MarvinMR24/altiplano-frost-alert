@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from .config import Settings, get_settings
 from .db import init_db, make_engine
 from .providers import get_provider
-from .routers import alerts, aois, auth, geo, map, me, model
+from .routers import alerts, aois, auth, geo, map, me, model, social
 from .security import RateLimiter
 from .services.notify_email import get_email_sender
 
@@ -63,6 +63,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     for module in (auth, me, geo, map, aois, alerts, model):
         app.include_router(module.router)
     app.include_router(auth.password_router)
+    app.include_router(social.router)
     logging.getLogger("frostwatch").info("backend ready provider=%s email=%s muse_mock=%s",
                                          settings.data_provider, settings.email_provider, settings.muse_mock)
     return app

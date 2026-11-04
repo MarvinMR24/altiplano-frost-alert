@@ -6,16 +6,24 @@
 #   docker compose up                               -> backend only (http://localhost:8000)
 #   ML runs on the host with the root .venv (see Makefile), not in Docker.
 #
+# Production (AWS EC2, see docs/deploy_aws.md) adds Caddy for HTTPS and hides port 8000:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod up -d --build
+#
 # Never run `docker compose config` without --quiet: it prints interpolated secrets.
 
 services:
   backend:
     build: ./backend
     environment:
+      APP_ENV: ${APP_ENV:-development}
       META_API_KEY: ${META_API_KEY:-}
       META_API_BASE_URL: ${META_API_BASE_URL:-}
-      MUSE_MODEL: ${MUSE_MODEL:-}
+      # Defaults repeat the backend defaults: an empty value would override them.
+      MUSE_MODEL: ${MUSE_MODEL:-muse-spark-1.3}
       MUSE_MOCK: ${MUSE_MOCK:-1}
+      MUSE_MAX_TOKENS: ${MUSE_MAX_TOKENS:-8000}
+      MUSE_TIMEOUT_S: ${MUSE_TIMEOUT_S:-120}
+      MUSE_MAX_CALLS_PER_RUN: ${MUSE_MAX_CALLS_PER_RUN:-40}
       SESSION_SECRET: ${SESSION_SECRET:-}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-}
@@ -24,6 +32,10 @@ services:
       EMAIL_SMTP_USER: ${EMAIL_SMTP_USER:-}
       EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
+      EXPO_PUSH_URL: ${EXPO_PUSH_URL:-https://exp.host/--/api/v2/push/send}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
       DATABASE_URL: sqlite:////app/var/frostwatch.db
       DATA_PROVIDER: ${DATA_PROVIDER:-mock}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
@@ -40,5 +52,25 @@ services:
       retries: 5
       start_period: 10s
 
+  # HTTPS reverse proxy for production only (profile "prod"); see docker-compose.prod.yml.
+  caddy:
+    image: caddy:2
+    profiles: ["prod"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   backend_var:
+  caddy_data:
+  caddy_config:

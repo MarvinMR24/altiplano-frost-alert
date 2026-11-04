@@ -142,6 +142,19 @@ DagsHub repository: https://dagshub.com/SNARF3/altiplano-frost
 
 Modules: `src/frostwatch_ml` + `pipelines/` (ML), `backend/` (FastAPI + SQLite: users, areas, risk, alerts, email, Expo push, Muse explanations), `mobile/` (Expo app). The modules never import each other. The backend reads the model artifacts read-only.
 
+## Download
+
+- Android: the APK is attached to the latest GitHub Release (Releases page of this repo).
+  Allow installing apps from your browser when Android asks.
+- iPhone: install Expo Go and open the project link shared by the team (no App Store build
+  yet).
+- Web: local testing only (`cd mobile && npx expo start --web`).
+
+## Deploy
+
+- Backend on AWS (EC2, Docker Compose, Caddy with HTTPS): `docs/deploy_aws.md`.
+- Android APK with EAS Build and Google Maps: `docs/android_build.md`.
+
 ## Reproduce
 
 ```

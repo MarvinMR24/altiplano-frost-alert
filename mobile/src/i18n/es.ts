@@ -205,7 +205,6 @@ export const es = {
   'welcome.createAccount': 'Crear cuenta',
   'welcome.signIn': 'Iniciar sesión',
   'welcome.google': 'Continuar con Google',
-  'welcome.apple': 'Continuar con Apple',
   'welcome.comingSoon': 'Próximamente. Usa el correo por ahora.',
 
   'signup.aboutYou': 'Sobre ti',
@@ -332,9 +331,13 @@ export const es = {
   'muse.byMuse': 'Explicado por Muse Spark (inteligencia artificial) con los datos de esta noche. Puede tener errores.',
   'muse.byTemplate': 'Explicación automática con los datos de esta noche.',
   'muse.translatedNote': 'Traducción hecha por inteligencia artificial; puede tener errores.',
-  'muse.spanishFallback': 'Por ahora esta explicación está en castellano.',
+  'muse.spanishFallback': 'La traducción no está disponible por ahora; se muestra en castellano.',
   'tech.title': 'Información técnica',
   'tech.subtitle': 'Datos del modelo y de las condiciones. Toca para ver.',
+  'muse.listenIn': 'Leer y escuchar en',
+  'muse.thinkingSlow': 'Puede tardar hasta un minuto.',
+  'speech.nativeVoiceNote': 'El teléfono no tiene voz en aymara ni quechua: lee el texto con voz en castellano.',
+  'social.failed': 'No se pudo iniciar sesión. Intenta de nuevo o usa tu correo.',
 } as const;
 
 export type TranslationKey = keyof typeof es;

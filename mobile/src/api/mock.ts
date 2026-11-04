@@ -20,6 +20,7 @@ import {
   type AoiCreate,
   type AoiPatch,
   type Api,
+  type AuthProviders,
   type CoverageResponse,
   type Language,
   type MapResponse,
@@ -194,6 +195,15 @@ export class MockApi implements Api {
     return wait({ session_token: `mock:${email}`, user: clone(user) });
   }
 
+  async getAuthProviders(): Promise<AuthProviders> {
+    // Mock mode has no Google OAuth client.
+    return wait({ google: false });
+  }
+
+  async redeemLoginTicket(): Promise<VerifyResponse> {
+    throw new ApiError(401, 'invalid ticket');
+  }
+
   async forgotPassword(email: string): Promise<void> {
     if (!EMAIL_RE.test(email)) throw new ApiError(422, 'invalid_email');
     return wait(undefined);
@@ -281,6 +291,7 @@ export class MockApi implements Api {
         night_date: night,
         language: en ? 'en' : 'es',
         source: 'template',
+        translated: false,
         headline: en ? `Frost risk in ${cell.name}: ${pct}%` : `Riesgo de helada en ${cell.name}: ${pct}%`,
         what_happened: en
           ? `SIMULATED DATA. That night the frost risk in ${cell.name} was ${pct}%.`

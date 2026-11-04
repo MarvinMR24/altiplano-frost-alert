@@ -254,6 +254,11 @@ def facts_hash(facts: Facts, engine: str) -> str:
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
+def empty_reply_reason(usage: dict) -> str:
+    """An empty answer usually means the reasoning used up max_tokens."""
+    return "truncated" if usage.get("finish_reason") == "length" else "empty_reply"
+
+
 def _strip_fences(text: str) -> str:
     text = text.strip()
     if text.startswith("```"):
@@ -320,6 +325,10 @@ class Explainer:
             except Exception as exc:  # network or HTTP error: no retry
                 self._log_usage(key, {}, f"error:{type(exc).__name__}")
                 return None, f"api_error:{type(exc).__name__}"
+            if not content:
+                reason = empty_reply_reason(usage)
+                self._log_usage(key, usage, reason)
+                return None, reason
             try:
                 payload = json.loads(_strip_fences(content))
             except (json.JSONDecodeError, TypeError):
@@ -336,7 +345,7 @@ class Explainer:
         url = self.settings.meta_api_base_url.rstrip("/") + "/chat/completions"
         body = {"model": self.settings.muse_model, "messages": messages, "temperature": 0,
                 "max_tokens": self.settings.muse_max_tokens, "response_format": {"type": "json_object"}}
-        client = self.http or httpx.Client(timeout=60)
+        client = self.http or httpx.Client(timeout=self.settings.muse_timeout_s)
         try:
             resp = client.post(url, json=body, headers={"Authorization": f"Bearer {self.settings.meta_api_key}"})
             resp.raise_for_status()
@@ -344,7 +353,12 @@ class Explainer:
         finally:
             if self.http is None:
                 client.close()
-        return data["choices"][0]["message"]["content"], data.get("usage") or {}
+        choice = (data.get("choices") or [{}])[0]
+        content = (choice.get("message") or {}).get("content")
+        if isinstance(content, list):  # content parts instead of a plain string
+            content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        usage = {**(data.get("usage") or {}), "finish_reason": choice.get("finish_reason")}
+        return content or "", usage
 
     def _log_usage(self, key: str, usage: dict, status: str) -> None:
         path = self.settings.muse_usage_log
@@ -352,6 +366,7 @@ class Explainer:
         entry = {"ts": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"), "model": self.settings.muse_model,
                  "prompt_version": PROMPT_VERSION, "facts_hash": key[:16], "status": status,
                  "prompt_tokens": usage.get("prompt_tokens"), "completion_tokens": usage.get("completion_tokens"),
-                 "total_tokens": usage.get("total_tokens")}
+                 "total_tokens": usage.get("total_tokens"), "finish_reason": usage.get("finish_reason"),
+                 "reasoning_tokens": (usage.get("completion_tokens_details") or {}).get("reasoning_tokens")}
         with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry) + "\n")
