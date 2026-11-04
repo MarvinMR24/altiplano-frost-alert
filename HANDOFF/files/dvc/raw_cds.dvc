@@ -1,6 +1,0 @@
-outs:
-- path: ../data/raw/cds
-  md5: a01716a1c75746d098ceff10afc961c5.dir
-  size: 263350032
-  nfiles: 29
-  hash: md5
