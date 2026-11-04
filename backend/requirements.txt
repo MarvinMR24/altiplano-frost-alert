@@ -9,7 +9,7 @@ python-dotenv==1.2.4
 shapely==2.2.0
 pyproj==3.8.0
 PyJWT==2.15.1
-# RS256 verification of Apple and Google identity tokens.
+# RS256 verification of Google identity tokens.
 cryptography==50.0.2
 numpy==2.5.4
 pandas==3.1.0

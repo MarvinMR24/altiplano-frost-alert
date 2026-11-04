@@ -1,9 +1,4 @@
-"""Authentication providers. Only the email code provider is implemented.
-
-Extension points (NOT implemented in this version): Google and Apple sign-in, a backend-driven
-flow opened from the app with WebBrowser.openAuthSessionAsync. A provider verifies an identity
-and returns the email; the session is then issued exactly as for the email code.
-"""
+"""Email code authentication provider. Google sign in lives in app/auth/social.py."""
 
 from __future__ import annotations
 
@@ -80,16 +75,3 @@ class EmailCodeProvider:
         db.commit()
         return True
 
-
-class GoogleAuthProvider:
-    """Extension point: Google sign-in. Not implemented in this version."""
-
-    def verify(self, *_args, **_kwargs) -> str:
-        raise NotImplementedError("Google sign-in is not part of this version")
-
-
-class AppleAuthProvider:
-    """Extension point: Sign in with Apple. Not implemented in this version."""
-
-    def verify(self, *_args, **_kwargs) -> str:
-        raise NotImplementedError("Apple sign-in is not part of this version")

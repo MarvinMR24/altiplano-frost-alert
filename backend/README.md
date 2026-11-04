@@ -12,8 +12,8 @@ Notes, contract differences and proposals: `docs/backend_notes.md`.
 - No live data and no scheduler. Alerts are created only when a night is processed with the
   CLI (replay or manual tick). They are never described as real time.
 - Auth: email code only (6 digits, hashed, 10 minutes, 3 requests per hour per email, 5
-  attempts per code), JWT HS256 sessions for 30 days. Google and Apple are extension points in
-  `app/auth/providers.py`, not implemented.
+  attempts per code), passwords (scrypt), and Google sign in (`app/auth/social.py`, backend
+  driven OAuth with a one-time login ticket). JWT HS256 sessions for 30 days.
 - Coverage: a 30 km circle around each of the 8 ERA5-Land cells (shapely, local azimuthal
   equidistant projection). AOIs must lie entirely inside it. AOI risk uses the cell whose
   circle contains the AOI centroid (the highest probability if several).

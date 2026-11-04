@@ -96,20 +96,12 @@ class UserOut(BaseModel):
     onboarded: bool
 
 
-class AppleSignInIn(StrictIn):
-    identity_token: str = Field(min_length=20, max_length=4096)
-    # Apple shares the full name only on the first sign in, on the device.
-    name: str | None = Field(default=None, max_length=80)
-    language: Language = "es"
-
-
 class TicketIn(StrictIn):
     ticket: str = Field(min_length=20, max_length=1024)
 
 
 class AuthProvidersOut(BaseModel):
     google: bool
-    apple: bool
 
 
 class VerifyOut(BaseModel):

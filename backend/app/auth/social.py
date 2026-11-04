@@ -1,8 +1,6 @@
-"""Sign in with Apple and Google.
+"""Sign in with Google.
 
-Apple: the iPhone gets an identity token (a JWT signed by Apple) and the app posts it; we
-check the signature with Apple's public keys, the issuer, the audience and the expiry.
-Google: backend driven OAuth (authorization code flow) so it works in Expo Go: the app
+Backend driven OAuth (authorization code flow) so it works in Expo Go: the app
 opens /auth/google/start in the system browser, Google returns to /auth/google/callback,
 we exchange the code with the client secret, verify the ID token and send the app back to
 its deep link with a short, single-use login ticket that it trades for a session.
@@ -27,8 +25,6 @@ from sqlalchemy.orm import Session
 from ..config import Settings
 from ..models import User
 
-APPLE_ISSUER = "https://appleid.apple.com"
-APPLE_KEYS_URL = "https://appleid.apple.com/auth/keys"
 GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"]
 GOOGLE_KEYS_URL = "https://www.googleapis.com/oauth2/v3/certs"
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -66,16 +62,9 @@ def _verified_email(claims: dict) -> str:
     verified = claims.get("email_verified")
     if not isinstance(email, str) or "@" not in email:
         raise SocialError("the provider did not share an email")
-    # Apple sends the flag as the string "true".
     if verified not in (True, "true"):
         raise SocialError("the provider email is not verified")
     return email.strip().lower()
-
-
-def apple_email(settings: Settings, identity_token: str, key_for: KeyResolver | None = None) -> str:
-    claims = verify_id_token(identity_token, key_for or remote_keys(APPLE_KEYS_URL), list(settings.apple_audiences),
-                             APPLE_ISSUER)
-    return _verified_email(claims)
 
 
 def find_or_create_user(db: Session, email: str, name: str | None, language: str) -> User:

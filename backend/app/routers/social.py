@@ -1,4 +1,4 @@
-"""Sign in with Apple and Google (see app/auth/social.py)."""
+"""Sign in with Google (see app/auth/social.py)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from ..auth.social import (
     SocialError,
     allowed_app_redirect,
-    apple_email,
     find_or_create_user,
     google_profile,
     google_start_url,
@@ -22,7 +21,7 @@ from ..auth.social import (
 )
 from ..deps import auth_rate_limit, get_db
 from ..models import User
-from ..schemas import AppleSignInIn, AuthProvidersOut, Language, TicketIn, VerifyOut
+from ..schemas import AuthProvidersOut, Language, TicketIn, VerifyOut
 from ..security import create_session_token
 from ..serializers import user_out
 
@@ -37,18 +36,7 @@ def _session(request: Request, user: User) -> VerifyOut:
 
 @router.get("/providers", response_model=AuthProvidersOut)
 def providers(request: Request) -> AuthProvidersOut:
-    return AuthProvidersOut(google=request.app.state.settings.google_enabled, apple=True)
-
-
-@router.post("/apple", response_model=VerifyOut)
-def sign_in_with_apple(body: AppleSignInIn, request: Request, db: Session = Depends(get_db)) -> VerifyOut:
-    try:
-        email = apple_email(request.app.state.settings, body.identity_token,
-                            getattr(request.app.state, "apple_keys", None))
-    except SocialError as exc:
-        log.info("apple sign in rejected: %s", exc)
-        raise HTTPException(401, str(exc)) from None
-    return _session(request, find_or_create_user(db, email, body.name, body.language))
+    return AuthProvidersOut(google=request.app.state.settings.google_enabled)
 
 
 @router.get("/google/start")
