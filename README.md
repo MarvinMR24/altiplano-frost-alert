@@ -4,7 +4,7 @@ Frost early warning for the Bolivian Altiplano (La Paz to Oruro corridor). A rep
 
 Built for the Meta Global AI Developer Hackathon (Indie track, "Build for Your World").
 
-**Status:** all metrics below are validation results (2010-2017). The test years (2018-2025) are locked and will be evaluated once, at the end.
+**Status:** models, thresholds and hyperparameters were chosen on validation (2010-2017). The test years (2018-2025) were then evaluated once, with every choice frozen. Results for both are below.
 
 ## Why
 
@@ -35,7 +35,24 @@ flowchart LR
 
 There is no live forecast yet. CDS reanalysis is published a few days late, so a night is processed either as a **replay** of a held-out test night with a simulated clock (the demo) or as a **manual tick** for a chosen date. Alerts are generated when a night is processed. They are not real time.
 
-## Results so far (validation 2010-2017, 23,376 nights)
+## Final test results (2018-2025, 23,376 nights, evaluated once)
+
+Thresholds, calibration and fitted statistics were frozen on validation. Test has fewer frost nights (base rate 0.320) than validation (0.335) and training (0.381), so the majority-class accuracy is higher on test (0.6802).
+
+| model | split | PR-AUC | F2 | precision | recall | ROC-AUC | Brier | accuracy | majority-class accuracy |
+|---|---|---|---|---|---|---|---|---|---|
+| **LR_best** (production) | validation | 0.8918 | 0.8757 | 0.6525 | 0.9576 | 0.9426 | 0.0913 | 0.8148 | 0.6647 |
+| **LR_best** (production) | **test** | **0.8930** | **0.8797** | 0.6510 | 0.9644 | 0.9480 | 0.0858 | 0.8233 | 0.6802 |
+| TREE_best (comparison only) | test | 0.9090 | 0.8867 | 0.6679 | 0.9658 | 0.9552 | 0.0798 | 0.8355 | 0.6802 |
+| climatology (best baseline) | test | 0.8086 | 0.8360 | 0.5602 | 0.9533 | 0.9090 | 0.1193 | 0.7457 | 0.6802 |
+| persistence | test | 0.6633 | 0.7674 | 0.7674 | 0.7674 | 0.8290 | 0.1488 | 0.8512 | 0.6802 |
+
+- LR_best holds up on test: PR-AUC 0.8930 and F2 0.8797, against 0.8918 and 0.8757 on validation. The macro-average over the 8 cells on test is PR-AUC 0.8361 and F2 0.8624.
+- On test, LR_best beats the best baseline (climatology) by +0.084 PR-AUC and +0.044 F2, with a Brier skill score of 0.281 against climatology.
+- Muse condition B was not adopted on validation, so it was not evaluated on test.
+- Full tables, per cell: `reports/final_test_metrics.md`. Demo replay nights, one honest miss and one false alarm: `reports/replay_candidates.md`.
+
+## Validation results (2010-2017, 23,376 nights)
 
 Pooled over the 8 cells. The majority-class accuracy is 0.6647.
 
@@ -147,12 +164,13 @@ Done:
 - Model artifacts for numpy-only serving.
 - The Muse A vs B experiment.
 
+- Final test evaluation, run once: LR_best PR-AUC 0.8930 and F2 0.8797 on 2018-2025.
+- Serving artifacts for the backend: model card with validation and test metrics, model coefficients (no pickle), and one prediction file per night for 2018-2025 and 2026 (3,221 nights).
+
 Next:
-1. Final test evaluation, run once (`pipelines/06_final_eval.py --i-confirm-final`). It scores LR_best and TREE_best on 2018-2025 and records B as not adopted.
-2. Publish the final artifacts for the backend (model card with test metrics, `lr_export.json`).
-3. End to end alert: backend serving with the final model, a real Muse explanation, a real email and a real Expo push to the iPhone.
-4. Demo replay of a held-out test night with frost, including one honest miss or false alarm.
-5. The 3-minute demo video.
+1. End to end alert: backend serving with the final model, a real Muse explanation, a real email and a real Expo push to the iPhone.
+2. Demo replay of a held-out test night with frost (recommended: 2024-08-17), including one honest miss or false alarm.
+3. The 3-minute demo video.
 
 ## Limitations
 

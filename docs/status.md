@@ -1,6 +1,6 @@
 # Status
 
-Last update: 2026-11-04 (Muse experiment section added).
+Last update: 2026-11-04 (final test evaluation and serving artifacts).
 
 ## Done
 - `pipelines/01_download.py`: CDS downloader for `reanalysis-era5-land-timeseries`. One process (lock file `data/raw/cds/.lock`), one request at a time, 10 s between requests, no automatic retries, resume from `data/raw/cds/manifest.json`. Each file is opened with xarray and checked (variables, units, hourly step, gaps, NaN, returned cells). Every response must contain exactly one cell equal to the expected one, otherwise the script stops.
@@ -233,3 +233,27 @@ Real run (2026-11-04, `muse-ab-fbbf62c6`, mirrored to MLflow on DagsHub):
   138262 output tokens, about 0.71 USD estimated (prices marked verify).
 
 Pending for the builder: one cache re-run (must show 0 API calls), then `dvc commit muse_correct`.
+
+## Final test evaluation and serving artifacts (2026-11-04)
+
+- `pipelines/06_final_eval.py --i-confirm-final --no-sync` ran once (MLflow mirror off in the agent
+  session). LR_best on test 2018-2025: PR-AUC 0.8930, F2 0.8797, Brier 0.0858, accuracy 0.8233
+  (majority 0.6802); macro PR-AUC 0.8361, F2 0.8624. Validation was 0.8918 and 0.8757. Base rates:
+  train 0.381, validation 0.335, test 0.320. Muse B recorded as "not adopted on validation".
+  Outputs: `reports/final_test_metrics.json` and `.md`; both model cards updated.
+- The evaluation logic lives in `frostwatch_ml.evaluation.final` and was rehearsed on validation
+  first (`tests/test_16_final_eval.py`: frozen models reproduce the stored validation metrics).
+- `pipelines/07_export_serving.py` (`make serving`) writes `artifacts/model_card.json`,
+  `artifacts/model_coefficients.json` and 3,221 files in `artifacts/predictions/` (2,922 test
+  nights for the replay, 299 nights of 2026 marked `period = out_of_sample_latest`; 2026-10-26 has
+  null observed values). Rows come from `leakage.serving_rows`, which works only after the final
+  report exists. Probabilities equal the model bundle (max abs diff 0).
+- Contract notes: levels use the contract names; `top_drivers` has all 24 signed contributions
+  (coefficient times standardized value, logit units); `conditions_1800` uses the keys the app
+  labels, without `tcc_pct` (the model only has the previous day's cloud cover, not an 18:00
+  value); `elevation_m` is the standard-atmosphere proxy from mean surface pressure; extra column
+  `period` (the backend ignores it and logs it once per file).
+- Backend check (no backend edits): 72 backend tests pass; with DATA_PROVIDER=artifacts the model
+  card loads, `list_nights` takes 7 ms for 3,221 files and one night loads in a few ms. No cap needed.
+- Replay: `reports/replay_candidates.md`; recommended night 2024-08-17.
+- Pending for the builder: mirror the final run to MLflow if wanted, and the end to end alert.
