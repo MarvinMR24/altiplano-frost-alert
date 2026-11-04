@@ -1,0 +1,636 @@
+{
+  "run_id": "muse-ab-fbbf62c6",
+  "muse_mode": "mock",
+  "seed": 42,
+  "data_hash_a": "fbbf62c6cdf98c15222dedd608cfda3dfa86d69c8f181d96796a94b7ea206f71",
+  "data_hash_b": "ed40a7135cf2e1689eb7b778b009c6ebbb204a67c4ecfd5c164036fa06747261",
+  "features_manifest_sha256": "79bab44990b5a8a28a98b5eef29972499d946f0742f32faefdcfa363aed0f8d9",
+  "package_versions": {
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.7.0",
+    "joblib": "1.6.0",
+    "pyarrow": "25.0.1",
+    "python": "3.12.13"
+  },
+  "prompt_versions": {
+    "anomaly_review": "muse_anomaly_review_v1@df2752d8",
+    "feature_proposals": "muse_feature_proposals_v1@67e154a1"
+  },
+  "muse_calls_this_run": {
+    "mode": "mock",
+    "api_calls": 0,
+    "cache_hits": 1,
+    "mock_calls": 14,
+    "failed": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "est_cost_usd": 0.0
+  },
+  "muse_usage_experiment_total": {
+    "calls": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "est_cost_usd": 0
+  },
+  "estimate": {
+    "calls": 15,
+    "input_tokens_est": 28453,
+    "output_tokens_worst_case": 60000,
+    "cost_worst_case_usd": 0.2906,
+    "cost_input_only_usd": 0.0356
+  },
+  "b1_funnel": {
+    "anomalies_total": 43160,
+    "by_rule_field": [
+      {
+        "rule": "hourly_jump",
+        "field": "d2m_c",
+        "n": 3818
+      },
+      {
+        "rule": "hourly_jump",
+        "field": "skt_c",
+        "n": 1
+      },
+      {
+        "rule": "hourly_jump",
+        "field": "t2m_c",
+        "n": 218
+      },
+      {
+        "rule": "precipitation_negative",
+        "field": "tp_mm",
+        "n": 38321
+      },
+      {
+        "rule": "ssrd_negative",
+        "field": "ssrd_wm2",
+        "n": 802
+      }
+    ],
+    "affect_a_feature": 38667,
+    "clipped_values_in_code": {
+      "tp_mm": 38321,
+      "ssrd_wm2": 802
+    },
+    "in_scope_for_review": 277,
+    "in_scope_by_rule_field": [
+      {
+        "rule": "hourly_jump",
+        "field": "d2m_c",
+        "n": 89
+      },
+      {
+        "rule": "hourly_jump",
+        "field": "t2m_c",
+        "n": 188
+      }
+    ],
+    "sampled": 277,
+    "batches": 14
+  },
+  "b1_decisions": {
+    "kept": 264,
+    "applied": 13
+  },
+  "b1_feature_changes_from_clipping": {
+    "values_changed": 29009,
+    "rows_changed": 29009,
+    "rows_changed_by_split": {
+      "train": 17643,
+      "validation": 5462,
+      "test": 5365,
+      "out_of_sample_check": 539
+    },
+    "per_feature": {
+      "precip_24h_mm": {
+        "changed": 29009,
+        "max_abs_change": 8.906499715521932e-05
+      }
+    }
+  },
+  "b1_feature_changes_from_muse": {
+    "values_changed": 0,
+    "rows_changed": 0,
+    "rows_changed_by_split": {},
+    "per_feature": {}
+  },
+  "b2_candidates": [
+    {
+      "candidate": 1,
+      "muse_name": "dry_clear_cooling",
+      "formula": "dewpoint_depression_1800_c * (1 - sky_emissivity_1800)",
+      "category": "radiative_cooling",
+      "rationale": "mock: dry air under a clear sky cools faster",
+      "column": "muse_f1",
+      "decision": "accepted",
+      "names_used": [
+        "dewpoint_depression_1800_c",
+        "sky_emissivity_1800"
+      ]
+    },
+    {
+      "candidate": 2,
+      "muse_name": "calm_clear",
+      "formula": "afternoon_clearness / (1 + wind_1800_ms)",
+      "category": "wind",
+      "rationale": "mock: clear and calm evenings favor radiative cooling",
+      "column": "muse_f2",
+      "decision": "accepted",
+      "names_used": [
+        "afternoon_clearness",
+        "wind_1800_ms"
+      ]
+    },
+    {
+      "candidate": 3,
+      "muse_name": "bad_name",
+      "formula": "latitude + 1",
+      "category": "cloud",
+      "rationale": "mock: invalid on purpose",
+      "column": null,
+      "decision": "rejected: unknown name 'latitude'"
+    }
+  ],
+  "b2_schema_errors": [],
+  "b2_call_status": "ok",
+  "a_recheck": {
+    "reference_run": "r2-LR_best-fbbf62c6",
+    "max_abs_diff": 0.0,
+    "confirmed": true,
+    "per_metric_abs_diff": {
+      "pr_auc": 0.0,
+      "f2": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "roc_auc": 0.0,
+      "brier": 0.0,
+      "accuracy": 0.0,
+      "threshold": 0.0
+    }
+  },
+  "validation_pooled": {
+    "A": {
+      "n": 23376,
+      "base_rate": 0.3353439425051335,
+      "threshold": 0.1724319670441336,
+      "accuracy": 0.8147672826830937,
+      "majority_class_accuracy": 0.6646560574948666,
+      "precision": 0.6524989135158626,
+      "recall": 0.9576476591401964,
+      "f1": 0.7761579818031431,
+      "f2": 0.8757378502601432,
+      "roc_auc": 0.9426317975510611,
+      "pr_auc": 0.8918274445821428,
+      "brier": 0.09132955932869552,
+      "tp": 7507,
+      "fp": 3998,
+      "fn": 332,
+      "tn": 11539
+    },
+    "B": {
+      "n": 23376,
+      "base_rate": 0.3353439425051335,
+      "threshold": 0.16396936797268105,
+      "accuracy": 0.8128850102669405,
+      "majority_class_accuracy": 0.6646560574948666,
+      "precision": 0.6494178525226391,
+      "recall": 0.9605817068503636,
+      "f1": 0.7749305341154678,
+      "f2": 0.8765802891667249,
+      "roc_auc": 0.9429802942813291,
+      "pr_auc": 0.891878011384804,
+      "brier": 0.0911447676867395,
+      "tp": 7530,
+      "fp": 4065,
+      "fn": 309,
+      "tn": 11472
+    },
+    "climatology": {
+      "n": 23376,
+      "base_rate": 0.3353439425051335,
+      "threshold": 0.216,
+      "accuracy": 0.7592830253251198,
+      "majority_class_accuracy": 0.6646560574948666,
+      "precision": 0.5869360163496306,
+      "recall": 0.9525449674703406,
+      "f1": 0.7263265405379116,
+      "f2": 0.8470211897091521,
+      "roc_auc": 0.9078055943770813,
+      "pr_auc": 0.8134685555894103,
+      "brier": 0.11949840209906219,
+      "tp": 7467,
+      "fp": 5255,
+      "fn": 372,
+      "tn": 10282
+    },
+    "persistence": {
+      "n": 23376,
+      "base_rate": 0.3353439425051335,
+      "threshold": 1.0,
+      "accuracy": 0.8385951403148528,
+      "majority_class_accuracy": 0.6646560574948666,
+      "precision": 0.7593112244897959,
+      "recall": 0.7594080877662968,
+      "f1": 0.7593596530390968,
+      "f2": 0.7593887131339933,
+      "roc_auc": 0.8189780350011248,
+      "pr_auc": 0.6573081253925803,
+      "brier": 0.16140485968514717,
+      "tp": 5953,
+      "fp": 1887,
+      "fn": 1886,
+      "tn": 13650
+    }
+  },
+  "validation_macro_over_cells": {
+    "A": {
+      "accuracy": 0.8147672826830938,
+      "majority_class_accuracy": 0.6932323750855578,
+      "precision": 0.6237882065469722,
+      "recall": 0.9565124213044977,
+      "f1": 0.7476974623846905,
+      "f2": 0.8570223448244672,
+      "roc_auc": 0.9359073120825392,
+      "pr_auc": 0.8373842357503873,
+      "brier": 0.0913295593286955,
+      "base_rate": 0.33534394250513344
+    },
+    "B": {
+      "accuracy": 0.8128850102669405,
+      "majority_class_accuracy": 0.6932323750855578,
+      "precision": 0.6206226855489385,
+      "recall": 0.9599596001284751,
+      "f1": 0.746165927497871,
+      "f2": 0.8577214879868065,
+      "roc_auc": 0.9362152818339058,
+      "pr_auc": 0.8387414090274665,
+      "brier": 0.09114476768673949,
+      "base_rate": 0.33534394250513344
+    },
+    "climatology": {
+      "accuracy": 0.7592830253251197,
+      "majority_class_accuracy": 0.6932323750855578,
+      "precision": 0.5660660437717425,
+      "recall": 0.9431506472552689,
+      "f1": 0.7036717426571216,
+      "f2": 0.8281258265206242,
+      "roc_auc": 0.8914239527107735,
+      "pr_auc": 0.7309717325211456,
+      "brier": 0.11949840209906218,
+      "base_rate": 0.33534394250513344
+    },
+    "persistence": {
+      "accuracy": 0.8385951403148528,
+      "majority_class_accuracy": 0.6932323750855578,
+      "precision": 0.7175582490637511,
+      "recall": 0.7176177669648747,
+      "f1": 0.7175879997272201,
+      "f2": 0.7176058580800242,
+      "roc_auc": 0.7932444729693096,
+      "pr_auc": 0.6059935256814348,
+      "brier": 0.16140485968514717,
+      "base_rate": 0.33534394250513344
+    }
+  },
+  "validation_per_cell": {
+    "A": [
+      {
+        "point_id": "calamarca",
+        "n": 2922,
+        "base_rate": 0.34223134839151265,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.811772758384668,
+        "majority_class_accuracy": 0.6577686516084873,
+        "precision": 0.6538987688098495,
+        "recall": 0.956,
+        "f1": 0.776604386677498,
+        "f2": 0.8751373123398023,
+        "roc_auc": 0.9327611862643079,
+        "pr_auc": 0.8684436722336364,
+        "brier": 0.09834227878773188,
+        "tp": 956,
+        "fp": 506,
+        "fn": 44,
+        "tn": 1416
+      },
+      {
+        "point_id": "caracollo",
+        "n": 2922,
+        "base_rate": 0.20191649555099248,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.8021902806297057,
+        "majority_class_accuracy": 0.7980835044490076,
+        "precision": 0.5053285968028419,
+        "recall": 0.964406779661017,
+        "f1": 0.6631701631701632,
+        "f2": 0.8161216293746414,
+        "roc_auc": 0.9237317207896039,
+        "pr_auc": 0.7089372754370398,
+        "brier": 0.09274030661131585,
+        "tp": 569,
+        "fp": 557,
+        "fn": 21,
+        "tn": 1775
+      },
+      {
+        "point_id": "charana",
+        "n": 2922,
+        "base_rate": 0.6143052703627653,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.8415468856947297,
+        "majority_class_accuracy": 0.6143052703627653,
+        "precision": 0.8109243697478992,
+        "recall": 0.9676880222841225,
+        "f1": 0.8823977647955296,
+        "f2": 0.9316670242437244,
+        "roc_auc": 0.9395768092873578,
+        "pr_auc": 0.9603382822836383,
+        "brier": 0.09650685765850885,
+        "tp": 1737,
+        "fp": 405,
+        "fn": 58,
+        "tn": 722
+      },
+      {
+        "point_id": "corocoro",
+        "n": 2922,
+        "base_rate": 0.48973305954825463,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.8483915126625599,
+        "majority_class_accuracy": 0.5102669404517454,
+        "precision": 0.7930011862396203,
+        "recall": 0.9343116701607268,
+        "f1": 0.8578761629772218,
+        "f2": 0.9021592442645076,
+        "roc_auc": 0.9417961296781387,
+        "pr_auc": 0.9388563501097891,
+        "brier": 0.09823767045494995,
+        "tp": 1337,
+        "fp": 349,
+        "fn": 94,
+        "tn": 1142
+      },
+      {
+        "point_id": "el_alto",
+        "n": 2922,
+        "base_rate": 0.16153319644079397,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.7813141683778234,
+        "majority_class_accuracy": 0.838466803559206,
+        "precision": 0.42144873000940736,
+        "recall": 0.9491525423728814,
+        "f1": 0.58371335504886,
+        "f2": 0.7590647238224331,
+        "roc_auc": 0.9220684884123141,
+        "pr_auc": 0.6684245935569993,
+        "brier": 0.08375806285915434,
+        "tp": 448,
+        "fp": 615,
+        "fn": 24,
+        "tn": 1835
+      },
+      {
+        "point_id": "huanuni",
+        "n": 2922,
+        "base_rate": 0.35728952772073924,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.8042436687200547,
+        "majority_class_accuracy": 0.6427104722792607,
+        "precision": 0.649746192893401,
+        "recall": 0.9808429118773946,
+        "f1": 0.781679389312977,
+        "f2": 0.8901251738525731,
+        "roc_auc": 0.9508857348038795,
+        "pr_auc": 0.9152795235616132,
+        "brier": 0.087095299209067,
+        "tp": 1024,
+        "fp": 552,
+        "fn": 20,
+        "tn": 1326
+      },
+      {
+        "point_id": "oruro",
+        "n": 2922,
+        "base_rate": 0.19267624914442164,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.8319644079397673,
+        "majority_class_accuracy": 0.8073237508555784,
+        "precision": 0.5365853658536586,
+        "recall": 0.9378330373001776,
+        "f1": 0.6826115061409179,
+        "f2": 0.8158220024721878,
+        "roc_auc": 0.9396657071628479,
+        "pr_auc": 0.7675971115135766,
+        "brier": 0.07832035641297062,
+        "tp": 528,
+        "fp": 456,
+        "fn": 35,
+        "tn": 1903
+      },
+      {
+        "point_id": "patacamaya",
+        "n": 2922,
+        "base_rate": 0.32306639288158795,
+        "threshold": 0.1724319670441336,
+        "accuracy": 0.7967145790554415,
+        "majority_class_accuracy": 0.676933607118412,
+        "precision": 0.6193724420190996,
+        "recall": 0.961864406779661,
+        "f1": 0.7535269709543567,
+        "f2": 0.8660816482258681,
+        "roc_auc": 0.9367727202618635,
+        "pr_auc": 0.8711970773068061,
+        "brier": 0.09563564263586556,
+        "tp": 908,
+        "fp": 558,
+        "fn": 36,
+        "tn": 1420
+      }
+    ],
+    "B": [
+      {
+        "point_id": "calamarca",
+        "n": 2922,
+        "base_rate": 0.34223134839151265,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.810403832991102,
+        "majority_class_accuracy": 0.6577686516084873,
+        "precision": 0.6523224043715847,
+        "recall": 0.955,
+        "f1": 0.7751623376623377,
+        "f2": 0.8739019033674964,
+        "roc_auc": 0.933146201873049,
+        "pr_auc": 0.8687755991869271,
+        "brier": 0.098011010648059,
+        "tp": 955,
+        "fp": 509,
+        "fn": 45,
+        "tn": 1413
+      },
+      {
+        "point_id": "caracollo",
+        "n": 2922,
+        "base_rate": 0.20191649555099248,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.7960301163586585,
+        "majority_class_accuracy": 0.7980835044490076,
+        "precision": 0.4973913043478261,
+        "recall": 0.9694915254237289,
+        "f1": 0.6574712643678161,
+        "f2": 0.8148148148148149,
+        "roc_auc": 0.9237520714015757,
+        "pr_auc": 0.712230920274318,
+        "brier": 0.09298512876548541,
+        "tp": 572,
+        "fp": 578,
+        "fn": 18,
+        "tn": 1754
+      },
+      {
+        "point_id": "charana",
+        "n": 2922,
+        "base_rate": 0.6143052703627653,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.8429158110882957,
+        "majority_class_accuracy": 0.6143052703627653,
+        "precision": 0.8118580765639589,
+        "recall": 0.9688022284122563,
+        "f1": 0.8834137668275337,
+        "f2": 0.9327397554172923,
+        "roc_auc": 0.9389376484516538,
+        "pr_auc": 0.9590870279035444,
+        "brier": 0.0971298118205383,
+        "tp": 1739,
+        "fp": 403,
+        "fn": 56,
+        "tn": 724
+      },
+      {
+        "point_id": "corocoro",
+        "n": 2922,
+        "base_rate": 0.48973305954825463,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.8497604380561259,
+        "majority_class_accuracy": 0.5102669404517454,
+        "precision": 0.7910798122065728,
+        "recall": 0.9419986023759609,
+        "f1": 0.8599681020733653,
+        "f2": 0.9073774905761983,
+        "roc_auc": 0.9423744891899734,
+        "pr_auc": 0.9387798014219176,
+        "brier": 0.09715120967657319,
+        "tp": 1348,
+        "fp": 356,
+        "fn": 83,
+        "tn": 1135
+      },
+      {
+        "point_id": "el_alto",
+        "n": 2922,
+        "base_rate": 0.16153319644079397,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.7813141683778234,
+        "majority_class_accuracy": 0.838466803559206,
+        "precision": 0.4217432052483599,
+        "recall": 0.9533898305084746,
+        "f1": 0.5847953216374269,
+        "f2": 0.7614213197969544,
+        "roc_auc": 0.9240548253199585,
+        "pr_auc": 0.6818225999727705,
+        "brier": 0.08279343193054496,
+        "tp": 450,
+        "fp": 617,
+        "fn": 22,
+        "tn": 1833
+      },
+      {
+        "point_id": "huanuni",
+        "n": 2922,
+        "base_rate": 0.35728952772073924,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.7991101984941821,
+        "majority_class_accuracy": 0.6427104722792607,
+        "precision": 0.6432601880877743,
+        "recall": 0.9827586206896551,
+        "f1": 0.7775672603258811,
+        "f2": 0.8889273955986831,
+        "roc_auc": 0.9513544612145473,
+        "pr_auc": 0.9154460049074592,
+        "brier": 0.0874358578939171,
+        "tp": 1026,
+        "fp": 569,
+        "fn": 18,
+        "tn": 1309
+      },
+      {
+        "point_id": "oruro",
+        "n": 2922,
+        "base_rate": 0.19267624914442164,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.8247775496235455,
+        "majority_class_accuracy": 0.8073237508555784,
+        "precision": 0.5250737463126843,
+        "recall": 0.9484902309058615,
+        "f1": 0.6759493670886076,
+        "f2": 0.8167635362496176,
+        "roc_auc": 0.9387064543259367,
+        "pr_auc": 0.7627795400604861,
+        "brier": 0.0790899752154732,
+        "tp": 534,
+        "fp": 483,
+        "fn": 29,
+        "tn": 1876
+      },
+      {
+        "point_id": "patacamaya",
+        "n": 2922,
+        "base_rate": 0.32306639288158795,
+        "threshold": 0.16396936797268105,
+        "accuracy": 0.7987679671457906,
+        "majority_class_accuracy": 0.676933607118412,
+        "precision": 0.6222527472527473,
+        "recall": 0.9597457627118644,
+        "f1": 0.755,
+        "f2": 0.8658256880733946,
+        "roc_auc": 0.9373961028945519,
+        "pr_auc": 0.8710097784923099,
+        "brier": 0.0945617155433248,
+        "tp": 906,
+        "fp": 550,
+        "fn": 38,
+        "tn": 1428
+      }
+    ]
+  },
+  "calibration": {
+    "A": {
+      "method": "sigmoid",
+      "a": 0.9979159049522363,
+      "b": 0.000386984240150886,
+      "cv": "GroupKFold(n_splits=5) by year on training rows"
+    },
+    "B": {
+      "method": "sigmoid",
+      "a": 0.9990284102387014,
+      "b": 3.99709025917655e-05,
+      "cv": "GroupKFold(n_splits=5) by year on training rows"
+    }
+  },
+  "gain_b_minus_a_pooled": {
+    "pr_auc": 5.0566802661244914e-05,
+    "f2": 0.000842438906581755
+  },
+  "gain_b_minus_a_macro": {
+    "pr_auc": 0.0013571732770791822,
+    "f2": 0.0006991431623393218
+  },
+  "adopted_on_validation": false,
+  "verdict": "ship A",
+  "test_set": "locked, not evaluated",
+  "reproduce": ".venv/bin/python pipelines/05_muse_correct.py --config configs/muse.yaml --no-sync"
+}

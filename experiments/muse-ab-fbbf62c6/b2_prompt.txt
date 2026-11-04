@@ -1,0 +1,220 @@
+You help design input features for a logistic regression that predicts whether tonight will have frost (air temperature at or below 0 C), using only information available at 18:00 local time.
+
+You receive the existing feature names with unit, one-line meaning and summary statistics over the training period (mean, std, p5, p95). You receive no rows, no labels, no dates and no places.
+
+Propose at most 6 new candidate features. Each must be a formula over the given feature names only, using this grammar:
+- operators + - * / and parentheses
+- numeric constants
+- functions min(a, b, ...), max(a, b, ...), abs(x), log1p(x), sqrt(x)
+No other names, functions, operators (no power operator) or text are allowed.
+
+Prefer physically motivated combinations in these categories: radiative_cooling, humidity_deficit, wind, cloud. Avoid duplicating an existing feature or a plain rescaling of one. Avoid division by quantities that can be zero or negative, and sqrt or log1p of quantities that can be negative (use max(x, 0) or an offset).
+
+Answer with one JSON object and nothing else:
+{"features": [{"name": "<snake_case>", "formula": "<formula>", "category": "radiative_cooling" | "humidity_deficit" | "wind" | "cloud", "rationale": "<one line, at most 25 words>"}]}
+
+
+--- user message (JSON) ---
+{
+ "features": [
+  {
+   "name": "t2m_1800_c",
+   "unit": "degC",
+   "meaning": "2 m air temperature at 18:00 local",
+   "mean": 10.65,
+   "std": 2.639,
+   "p5": 6.73,
+   "p95": 15.35
+  },
+  {
+   "name": "d2m_1800_c",
+   "unit": "degC",
+   "meaning": "2 m dew point at 18:00 local",
+   "mean": -4.573,
+   "std": 9.823,
+   "p5": -25.18,
+   "p95": 5.258
+  },
+  {
+   "name": "dewpoint_depression_1800_c",
+   "unit": "degC",
+   "meaning": "air temperature minus dew point at 18:00 local",
+   "mean": 15.23,
+   "std": 10.91,
+   "p5": 3.578,
+   "p95": 37.16
+  },
+  {
+   "name": "rh_1800_pct",
+   "unit": "%",
+   "meaning": "relative humidity at 18:00 local",
+   "mean": 42.9,
+   "std": 24.15,
+   "p5": 5.754,
+   "p95": 78.15
+  },
+  {
+   "name": "wind_1800_ms",
+   "unit": "m s-1",
+   "meaning": "10 m wind speed at 18:00 local",
+   "mean": 3.119,
+   "std": 1.598,
+   "p5": 0.8739,
+   "p95": 6.201
+  },
+  {
+   "name": "sp_1800_hpa",
+   "unit": "hPa",
+   "meaning": "surface pressure at 18:00 local",
+   "mean": 629.9,
+   "std": 9.673,
+   "p5": 614.6,
+   "p95": 646.1
+  },
+  {
+   "name": "ssrd_1800_wm2",
+   "unit": "W m-2",
+   "meaning": "downward shortwave radiation in the hour ending 18:00 local",
+   "mean": 155.2,
+   "std": 65.0,
+   "p5": 73.55,
+   "p95": 280.3
+  },
+  {
+   "name": "strd_1800_wm2",
+   "unit": "W m-2",
+   "meaning": "downward longwave radiation in the hour ending 18:00 local",
+   "mean": 263.5,
+   "std": 39.5,
+   "p5": 190.6,
+   "p95": 314.8
+  },
+  {
+   "name": "ssrd_afternoon_mean_wm2",
+   "unit": "W m-2",
+   "meaning": "mean downward shortwave radiation 12:00 to 17:00 local",
+   "mean": 727.3,
+   "std": 122.9,
+   "p5": 534.2,
+   "p95": 947.5
+  },
+  {
+   "name": "strd_afternoon_mean_wm2",
+   "unit": "W m-2",
+   "meaning": "mean downward longwave radiation 12:00 to 17:00 local",
+   "mean": 265.8,
+   "std": 39.62,
+   "p5": 194.7,
+   "p95": 319.5
+  },
+  {
+   "name": "skt_1800_c",
+   "unit": "degC",
+   "meaning": "land skin temperature at 18:00 local",
+   "mean": 15.91,
+   "std": 3.957,
+   "p5": 9.869,
+   "p95": 22.95
+  },
+  {
+   "name": "stl1_1800_c",
+   "unit": "degC",
+   "meaning": "soil temperature 0 to 7 cm at 18:00 local",
+   "mean": 15.83,
+   "std": 3.83,
+   "p5": 9.684,
+   "p95": 22.69
+  },
+  {
+   "name": "precip_24h_mm",
+   "unit": "mm",
+   "meaning": "total precipitation in the 24 h ending 18:00 local",
+   "mean": 2.241,
+   "std": 3.489,
+   "p5": 0.0004334,
+   "p95": 9.355
+  },
+  {
+   "name": "prev_night_tmin_c",
+   "unit": "degC",
+   "meaning": "minimum air temperature of the previous night",
+   "mean": 0.7887,
+   "std": 3.642,
+   "p5": -5.963,
+   "p95": 5.784
+  },
+  {
+   "name": "prev_night_frost",
+   "unit": "0/1",
+   "meaning": "1 if the previous night minimum was at or below 0 C",
+   "mean": 0.3807,
+   "std": 0.4856,
+   "p5": 0.0,
+   "p95": 1.0
+  },
+  {
+   "name": "cooling_rate_1500_1800_c_per_h",
+   "unit": "degC h-1",
+   "meaning": "air temperature change from 15:00 to 18:00 local divided by 3",
+   "mean": -0.9041,
+   "std": 0.4208,
+   "p5": -1.637,
+   "p95": -0.2805
+  },
+  {
+   "name": "doy_sin",
+   "unit": "1",
+   "meaning": "sine of the day of year (seasonal cycle)",
+   "mean": 2.178e-06,
+   "std": 0.7072,
+   "p5": -0.9879,
+   "p95": 0.9872
+  },
+  {
+   "name": "doy_cos",
+   "unit": "1",
+   "meaning": "cosine of the day of year (seasonal cycle)",
+   "mean": -0.0001369,
+   "std": 0.7071,
+   "p5": -0.987,
+   "p95": 0.9874
+  },
+  {
+   "name": "sky_emissivity_1800",
+   "unit": "1",
+   "meaning": "downward longwave over sigma T^4 at 18:00; higher means cloudier or moister sky",
+   "mean": 0.7173,
+   "std": 0.1141,
+   "p5": 0.5166,
+   "p95": 0.8741
+  },
+  {
+   "name": "sky_emissivity_change_1500_1800",
+   "unit": "1",
+   "meaning": "sky emissivity at 18:00 minus at 15:00 local",
+   "mean": 0.008145,
+   "std": 0.04352,
+   "p5": -0.06572,
+   "p95": 0.08021
+  },
+  {
+   "name": "afternoon_clearness",
+   "unit": "0-1",
+   "meaning": "afternoon shortwave over its clear-sky reference; 1 means clear",
+   "mean": 0.8442,
+   "std": 0.1285,
+   "p5": 0.6021,
+   "p95": 0.997
+  },
+  {
+   "name": "cloud_cover_prev_day",
+   "unit": "0-1",
+   "meaning": "mean cloud cover fraction of the previous day",
+   "mean": 0.5287,
+   "std": 0.3091,
+   "p5": 0.01574,
+   "p95": 0.9245
+  }
+ ],
+ "max_new_features": 6
+}

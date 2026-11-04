@@ -1,0 +1,132 @@
+run_id: muse-ab-fbbf62c6
+conditions:
+  A: r2-LR_best-fbbf62c6 recomputed
+  B: A + B1 corrections + B2 features
+seed: 42
+muse:
+  model: muse-spark-1.3
+  temperature: 0
+  max_tokens: 4000
+prompt_versions:
+  anomaly_review: muse_anomaly_review_v1@df2752d8
+  feature_proposals: muse_feature_proposals_v1@67e154a1
+anomaly_review:
+  sample_cap: 300
+  batch_size: 20
+  neighbor_hours: 3
+  confidence_min: 0.8
+  sample_splits:
+  - train
+  - validation
+  clip_tiny_negatives:
+    tp_mm: 0.001
+    ssrd_wm2: 0.01
+  ranges_c:
+    t2m_c:
+    - -40.0
+    - 45.0
+    d2m_c:
+    - -60.0
+    - 35.0
+    skt_c:
+    - -50.0
+    - 70.0
+  units:
+    t2m_c: degC
+    d2m_c: degC
+    skt_c: degC
+  names:
+    t2m_c: air temperature at 2 m
+    d2m_c: dew point temperature at 2 m
+    skt_c: skin (surface) temperature
+feature_proposals:
+  max_features: 6
+  exclude:
+  - latitude
+  - elevation_proxy_m
+  functions:
+  - min
+  - max
+  - abs
+  - log1p
+  - sqrt
+decision_rule:
+  min_gain_pr_auc: 0.02
+  min_gain_f2: 0.02
+  reference_run: r2-LR_best-fbbf62c6
+  reference_model_version: lr-20261103-fbbf62c6
+model_params:
+  C: 1.0
+  class_weight: null
+  penalty: l1
+features_a:
+- t2m_1800_c
+- d2m_1800_c
+- dewpoint_depression_1800_c
+- rh_1800_pct
+- wind_1800_ms
+- sp_1800_hpa
+- ssrd_1800_wm2
+- strd_1800_wm2
+- ssrd_afternoon_mean_wm2
+- strd_afternoon_mean_wm2
+- skt_1800_c
+- stl1_1800_c
+- precip_24h_mm
+- prev_night_tmin_c
+- prev_night_frost
+- cooling_rate_1500_1800_c_per_h
+- doy_sin
+- doy_cos
+- latitude
+- elevation_proxy_m
+- sky_emissivity_1800
+- sky_emissivity_change_1500_1800
+- afternoon_clearness
+- cloud_cover_prev_day
+features_b:
+- t2m_1800_c
+- d2m_1800_c
+- dewpoint_depression_1800_c
+- rh_1800_pct
+- wind_1800_ms
+- sp_1800_hpa
+- ssrd_1800_wm2
+- strd_1800_wm2
+- ssrd_afternoon_mean_wm2
+- strd_afternoon_mean_wm2
+- skt_1800_c
+- stl1_1800_c
+- precip_24h_mm
+- prev_night_tmin_c
+- prev_night_frost
+- cooling_rate_1500_1800_c_per_h
+- doy_sin
+- doy_cos
+- latitude
+- elevation_proxy_m
+- sky_emissivity_1800
+- sky_emissivity_change_1500_1800
+- afternoon_clearness
+- cloud_cover_prev_day
+- muse_f1
+- muse_f2
+data_hash_a: fbbf62c6cdf98c15222dedd608cfda3dfa86d69c8f181d96796a94b7ea206f71
+data_hash_b: ed40a7135cf2e1689eb7b778b009c6ebbb204a67c4ecfd5c164036fa06747261
+features_manifest_sha256: 79bab44990b5a8a28a98b5eef29972499d946f0742f32faefdcfa363aed0f8d9
+split_definition:
+  train:
+  - 1985
+  - 2009
+  validation:
+  - 2010
+  - 2017
+  test:
+  - 2018
+  - 2025
+  out_of_sample_check:
+  - 2026
+  - 2026
+selection: fit on train, threshold on validation; test locked
+reproduce: .venv/bin/python pipelines/05_muse_correct.py --config configs/muse.yaml
+  --no-sync

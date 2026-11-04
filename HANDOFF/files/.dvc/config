@@ -1,5 +1,0 @@
-[core]
-    no_scm = True
-    remote = dagshub
-['remote "dagshub"']
-    url = https://dagshub.com/SNARF3/altiplano-frost.dvc

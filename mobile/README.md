@@ -55,8 +55,6 @@ Pointing at the backend:
 - Web, local: `docker compose up` at the repo root (backend only), then
   `EXPO_PUBLIC_API_URL=http://localhost:8000` and `EXPO_PUBLIC_USE_MOCK=0`.
 - Expo Go: `EXPO_PUBLIC_API_URL=https://<public AWS backend URL>`.
-- Optional: an ngrok tunnel (`docker compose --profile tunnel up`) still works; every request
-  sends `ngrok-skip-browser-warning: 1`, which is harmless elsewhere.
 
 ## Mock mode
 

@@ -31,7 +31,7 @@ demo depends on a replay of a real test-period frost night that runs from one co
    - `EmailSender` (`EMAIL_PROVIDER=smtp`), only to a verified `notification_email`;
    - Expo Push API, payload `data: {alert_id}`;
    - every send is logged with status; a failed channel does not block the other.
-7. Internal operations as a CLI, never HTTP (ngrok forwards every route):
+7. Internal operations as a CLI, never HTTP (a public URL forwards every route):
    - `python -m app.cli replay`: picks a test-period night with observed frost from the
      artifacts, runs steps 4 to 6 with a simulated clock, marks the alert `replay: true`;
    - `python -m app.cli tick --date YYYY-MM-DD`: same flow for one night, default the latest

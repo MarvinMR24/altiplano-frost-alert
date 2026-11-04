@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "source": "mock_cache",
+  "content": "{\"features\": [{\"name\": \"dry_clear_cooling\", \"formula\": \"dewpoint_depression_1800_c * (1 - sky_emissivity_1800)\", \"category\": \"radiative_cooling\", \"rationale\": \"mock: dry air under a clear sky cools faster\"}, {\"name\": \"calm_clear\", \"formula\": \"afternoon_clearness / (1 + wind_1800_ms)\", \"category\": \"wind\", \"rationale\": \"mock: clear and calm evenings favor radiative cooling\"}, {\"name\": \"bad_name\", \"formula\": \"latitude + 1\", \"category\": \"cloud\", \"rationale\": \"mock: invalid on purpose\"}]}",
+  "usage": {
+    "prompt_tokens": 1155,
+    "completion_tokens": 122,
+    "estimated": true
+  }
+}

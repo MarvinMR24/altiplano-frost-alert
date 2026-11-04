@@ -122,3 +122,27 @@ stages:
           cache: false
       - reports/README.md:
           cache: false
+
+  muse_correct:
+    # Muse calls are read from logs/muse_cache/ (gitignored). Without the cache this stage calls the
+    # Meta Model API (MUSE_MOCK=0) or uses deterministic fakes (MUSE_MOCK=1, the default).
+    cmd: .venv/bin/python pipelines/05_muse_correct.py --config configs/muse.yaml --no-sync
+    deps:
+      - pipelines/05_muse_correct.py
+      - src/frostwatch_ml
+      - configs/muse.yaml
+      - configs/frost.yaml
+      - configs/features.yaml
+      - configs/model.yaml
+      - prompts/muse_anomaly_review_v1.txt
+      - prompts/muse_feature_proposals_v1.txt
+      - data/raw/cds
+      - data/processed/features.parquet
+      - data/processed/features_manifest.json
+      - data/processed/anomalies.parquet
+      - data/processed/model_candidates.json
+    outs:
+      - data/processed/muse
+      - data/processed/predictions/muse
+      - reports/muse_experiment.md:
+          cache: false

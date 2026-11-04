@@ -1,0 +1,254 @@
+{
+  "funnel": {
+    "anomalies_total": 43160,
+    "by_rule_field": [
+      {
+        "rule": "hourly_jump",
+        "field": "d2m_c",
+        "n": 3818
+      },
+      {
+        "rule": "hourly_jump",
+        "field": "skt_c",
+        "n": 1
+      },
+      {
+        "rule": "hourly_jump",
+        "field": "t2m_c",
+        "n": 218
+      },
+      {
+        "rule": "precipitation_negative",
+        "field": "tp_mm",
+        "n": 38321
+      },
+      {
+        "rule": "ssrd_negative",
+        "field": "ssrd_wm2",
+        "n": 802
+      }
+    ],
+    "affect_a_feature": 38667,
+    "clipped_values_in_code": {
+      "tp_mm": 38321,
+      "ssrd_wm2": 802
+    },
+    "in_scope_for_review": 277,
+    "in_scope_by_rule_field": [
+      {
+        "rule": "hourly_jump",
+        "field": "d2m_c",
+        "n": 89
+      },
+      {
+        "rule": "hourly_jump",
+        "field": "t2m_c",
+        "n": 188
+      }
+    ],
+    "sampled": 277,
+    "batches": 14
+  },
+  "calls": [
+    {
+      "batch": 0,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "a4cc0b3e104f4dbeaddc417b072987eaafd737cf9ed7ca9dc26c5139ff5ec5b2",
+      "usage": {
+        "prompt_tokens": 1961,
+        "completion_tokens": 531,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 1,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "b9ffc02f00197913b2dbfb6ec405323607721060995eb989a443ac5524f787b6",
+      "usage": {
+        "prompt_tokens": 1957,
+        "completion_tokens": 525,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 2,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "b82340b8cf67936e482d33834fbea03ef79924af7c20cdde42d652f0d46ae907",
+      "usage": {
+        "prompt_tokens": 2007,
+        "completion_tokens": 540,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 3,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "cb782919c44d24858d7279e8b87295ee034c643fd41d37071d2dedeb3942a3a3",
+      "usage": {
+        "prompt_tokens": 1958,
+        "completion_tokens": 526,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 4,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "a0488aa5dc1c7704bf279f887a980d0214eed8a24e76bc7aaf838c9e3fd77da3",
+      "usage": {
+        "prompt_tokens": 1941,
+        "completion_tokens": 531,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 5,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "abfe0efb73e6ceb4caacf770dd19aef9b5bdbc872b014bb7f3f40672d06f0479",
+      "usage": {
+        "prompt_tokens": 1954,
+        "completion_tokens": 525,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 6,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "7c2f577b3e1bc2f80e884c4166549a9fdb0c8e69b95087166d28136acc53dd50",
+      "usage": {
+        "prompt_tokens": 1973,
+        "completion_tokens": 525,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 7,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "9d6e384bb30b7c423a547a7d7fc5c9e3849a241929254bc16aa55c2c91061f9d",
+      "usage": {
+        "prompt_tokens": 1989,
+        "completion_tokens": 525,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 8,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "71a116b9ac871500ef4b284d4a297f17bbba627c4f34521f586a88ce6ed4e6c2",
+      "usage": {
+        "prompt_tokens": 2040,
+        "completion_tokens": 524,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 9,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "d2a6ccd2512be714b3bcaa50ae1b589e413ce0c50f9114d3ec47ed2b687f946c",
+      "usage": {
+        "prompt_tokens": 1974,
+        "completion_tokens": 530,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 10,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "e66ecb8487dfb31f45ad9045c6054be5e8f0997205eaaaa10bd66ae65acfa296",
+      "usage": {
+        "prompt_tokens": 1894,
+        "completion_tokens": 537,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 11,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "cc5d083a5d583a6f4e7cdc3cd38d90530c8b18009581f1e6d46b85af5704a994",
+      "usage": {
+        "prompt_tokens": 1976,
+        "completion_tokens": 540,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 12,
+      "records": 20,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "523945ea35f5cf5b4da3dfc6ebe51efa26da804de9a32b25d19c988281452a59",
+      "usage": {
+        "prompt_tokens": 1941,
+        "completion_tokens": 525,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    },
+    {
+      "batch": 13,
+      "records": 17,
+      "status": "ok",
+      "source": "mock",
+      "cache_key": "511f95f6f037701fb9aa512aba545b2c079e05005b73bfe3cdd0e59f3dbc7560",
+      "usage": {
+        "prompt_tokens": 1733,
+        "completion_tokens": 458,
+        "estimated": true
+      },
+      "error": null,
+      "schema_errors": []
+    }
+  ],
+  "decisions": {
+    "kept": 264,
+    "applied": 13
+  }
+}

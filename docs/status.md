@@ -1,6 +1,6 @@
 # Status
 
-Last update: 2026-11-02, 04:35 Bolivia time.
+Last update: 2026-11-04 (Muse experiment section added).
 
 ## Done
 - `pipelines/01_download.py`: CDS downloader for `reanalysis-era5-land-timeseries`. One process (lock file `data/raw/cds/.lock`), one request at a time, 10 s between requests, no automatic retries, resume from `data/raw/cds/manifest.json`. Each file is opened with xarray and checked (variables, units, hourly step, gaps, NaN, returned cells). Every response must contain exactly one cell equal to the expected one, otherwise the script stops.
@@ -178,3 +178,58 @@ python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
   checked in a headless browser (login, map with 8 cells, polygon drawing); backend 72 tests
   pass and ruff is clean; CORS preflight allows localhost:8081 and rejects other origins.
 - Not run: `docker build` (Docker off), `npx expo-doctor` (Expo API blocked from the VM).
+
+## Repo cleanup (2026-11-04)
+
+- Removed `HANDOFF/`: the Part 1 and Part 2 delivery from the isolated ML environment. Every
+  file in it was already copied into the repo (no differences), the doc sections were
+  appended, and the spec patch was applied. `HANDOFF/dvc_tracked/` duplicated `models/` and
+  `data/processed/`, which DVC restores with `dvc pull`.
+- Removed `ml/` (Dockerfile and a copy of `requirements.txt`) and the `ml` service in
+  `docker-compose.yml`: the ML pipeline runs on the host with the root `.venv`.
+- Kept `artifacts/`: it is the folder the backend reads (`ARTIFACTS_DIR`, mounted read-only
+  in Docker, `docs/artifacts_contract.md`). ML writes its outputs to `reports/<model_version>/`
+  and `models/`; the final export must place the contract files in `artifacts/`.
+- `Claude outputs/` (Cowork prompts) is gitignored.
+
+## Muse experiment (2026-11-04)
+
+Condition A (LR_best, `lr-20261103-fbbf62c6`) vs condition B (Muse-reviewed corrections B1 plus
+Muse-proposed feature formulas B2), validation only. The test split stays locked.
+
+Built:
+- `configs/muse.yaml`, `prompts/muse_anomaly_review_v1.txt`, `prompts/muse_feature_proposals_v1.txt`.
+- `src/frostwatch_ml/muse/`: `client.py` (Meta Model API, cache by request hash in `logs/muse_cache/`,
+  usage in `logs/muse_usage.jsonl`, `MUSE_MOCK=1` default with deterministic fakes, budget check
+  before each real call, one attempt, no retries), `masking.py`, `schema.py`, `formula.py`
+  (whitelist parser, no eval), `review.py` (B1), `proposals.py` (B2), `costs.py`, `experiment.py`.
+- `pipelines/05_muse_correct.py` (`--config --seed --dry-run --no-sync --smoke N`), `make muse`,
+  DVC stage `muse_correct` (outs `data/processed/muse`, `data/processed/predictions/muse`,
+  `reports/muse_experiment.md`).
+- `pipelines/06_final_eval.py` can score B in its single `--i-confirm-final` run if B passed on
+  validation; otherwise it records B as "not adopted on validation". Not run.
+- `tests/test_15_muse.py`: masking, parser, zero network with `MUSE_MOCK=1`, cache hit, budget
+  stop, no retry, physical checks, feature-hour map against the feature code, train-only
+  statistics, no locked rows. `make test` (74 passed) and `make lint` pass.
+
+Facts from the run plan: 43160 EDA flags; 38321 precipitation and 802 shortwave tiny negatives are
+clipped in code (never sent); 277 hourly jumps (188 t2m, 89 d2m) in train and validation years can
+change a feature; all 277 are sampled, 14 review calls plus 1 proposal call. Planning estimate:
+about 28.5k input tokens, worst case 0.29 USD (output bounded by max_tokens).
+
+A recheck: recomputing LR_best with the same code reproduces the stored validation metrics exactly.
+
+State: only the MUSE_MOCK=1 run exists. `reports/muse_experiment.md` and
+`experiments/muse-ab-fbbf62c6/` currently hold MOCK numbers (labeled as such) and must be
+overwritten by the real run. The real smoke call and the real run were not executed in this
+session: loading the key from `.env` was blocked for the agent. Next, run from a shell that
+exports META_API_KEY and META_API_BASE_URL:
+
+    MUSE_MOCK=0 .venv/bin/python pipelines/05_muse_correct.py --smoke 2 --no-sync
+    MUSE_MOCK=0 .venv/bin/python pipelines/05_muse_correct.py --no-sync
+    MUSE_MOCK=0 .venv/bin/python pipelines/05_muse_correct.py --no-sync   # must show 0 API calls
+
+Then `dvc commit muse_correct` (or `dvc repro muse_correct`, which reads from the cache) to record
+the stage in `dvc.lock`.
+
+- ngrok removed (2026-11-04): no tunnel service in `docker-compose.yml`, no `NGROK_*` variables. Local testing uses `localhost:8000`; Expo Go will use the AWS URL. The `ngrok-skip-browser-warning` header was removed from the mobile client and the contract.

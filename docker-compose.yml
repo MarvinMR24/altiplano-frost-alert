@@ -1,11 +1,10 @@
-# FrostWatch Altiplano: backend and ml, plus an optional ngrok tunnel.
+# FrostWatch Altiplano: the backend (local first, AWS deploy planned).
 # The mobile app is not containerized: run it on the host (`cd mobile && npx expo start --web`
 # for local testing). No secrets in this file. Values come from .env through ${VAR}
 # substitution, and each service gets only the variables it needs.
 #
 #   docker compose up                               -> backend only (http://localhost:8000)
-#   docker compose --profile tunnel up              -> backend + ngrok (needs NGROK_AUTHTOKEN, NGROK_DOMAIN)
-#   docker compose run --rm ml python pipelines/... -> ml, on demand only (never via `up`)
+#   ML runs on the host with the root .venv (see Makefile), not in Docker.
 #
 # Never run `docker compose config` without --quiet: it prints interpolated secrets.
 
@@ -40,45 +39,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-  # Optional public tunnel. The token and the static domain come from the builder's ngrok
-  # account (dashboard.ngrok.com); Docker only runs the agent.
-  ngrok:
-    profiles: ["tunnel"]
-    image: ngrok/ngrok:latest
-    # --url replaces the deprecated --domain flag of the ngrok agent.
-    command: ["http", "backend:8000", "--url=${NGROK_DOMAIN:-}"]
-    environment:
-      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
-    depends_on:
-      backend:
-        condition: service_healthy
-
-  # ml: on demand only, `docker compose run --rm ml python pipelines/<script>.py ...`
-  # NEVER run the CDS download through `up`, never in parallel, and never while another CDS
-  # process holds the lock (data/raw/cds/.lock). One CDS process only (MUSE.md rule 29).
-  ml:
-    profiles: ["ml"]
-    build:
-      context: .
-      dockerfile: ml/Dockerfile
-    restart: "no"
-    working_dir: /work
-    environment:
-      CDS_API_KEY: ${CDS_API_KEY:-}
-      CDS_API_URL: ${CDS_API_URL:-}
-      META_API_KEY: ${META_API_KEY:-}
-      META_API_BASE_URL: ${META_API_BASE_URL:-}
-      MUSE_MODEL: ${MUSE_MODEL:-}
-    volumes:
-      - ./pipelines:/work/pipelines
-      - ./configs:/work/configs
-      - ./prompts:/work/prompts
-      - ./experiments:/work/experiments
-      - ./data:/work/data
-      - ./logs:/work/logs
-      - ./artifacts:/work/artifacts
-      - ./docs:/work/docs
 
 volumes:
   backend_var:
