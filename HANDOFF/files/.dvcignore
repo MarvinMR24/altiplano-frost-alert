@@ -6,3 +6,6 @@
 data/raw/cds/**/*_unzipped/
 # Scratch extraction of the zipped raw files (rebuilt from the zips by pipelines/common.py).
 data/processed/scratch/
+# Python bytecode and packaging metadata inside the src/ dependency
+**/__pycache__/
+src/*.egg-info/

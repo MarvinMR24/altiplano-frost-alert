@@ -7,6 +7,7 @@ CLAUDE.md
 .env
 .env.*
 !.env.example
+!backend/.env.backend.example
 
 # Python
 .venv/
@@ -44,3 +45,10 @@ artifacts/*
 # Modules
 mobile/node_modules/
 backend/var/
+
+# DVC and handoff (data lives in DVC/DagsHub, never in git)
+models/
+.dvc/config.local
+.dvc/cache
+.dvc/tmp
+HANDOFF/*/

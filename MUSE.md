@@ -34,8 +34,19 @@ Machine learning
 15. No feature may use information after 18:00 local time of the prediction day. Labels are never sent to Muse.
 16. Logistic regression is the production model. Tree models (XGBoost, LightGBM, random forest) are for comparison only.
 17. Decision metrics: PR-AUC and F2. Always report accuracy next to the majority-class accuracy, plus precision, recall, F1, ROC-AUC and Brier score. Explain each metric in one plain sentence in the README.
-18. Every experiment has a config in `configs/experiments/<id>.yaml`, fixed seeds, a data hash, outputs in `experiments/<run_id>/` and a single command that reproduces it. No notebook-only results.
+18. Every experiment run writes `experiments/<run_id>/config.yaml` and `metrics.json` (git): seed, data hash (content hash of features.parquet), features_manifest SHA-256, package versions and the command that reproduces it. Validation predictions go to `data/processed/predictions/<round>/<run_id>.csv` (DVC). MLflow on DagsHub mirrors the runs; the local folder is the source of truth. No notebook-only results.
 19. Only two experiment conditions: **A** raw features, **B** Muse-improved dataset (Muse corrections plus Muse-generated columns and variable combinations). Adopt B only if PR-AUC and F2 both improve by at least 0.02 over A on validation and on test. Otherwise ship A. Say in the README that small gains may be noise (no confidence intervals).
+
+ML module
+32. Reusable ML code lives in the package `src/frostwatch_ml` (installed with `pip install -e .`). Scripts in `pipelines/` are thin CLIs with `--config`, `--seed`, `--dry-run` and `--no-sync`. `pipelines/01_download.py` stays as it is.
+33. Features are an explicit allowlist in `configs/features.yaml`, never "all columns". The AgERA5 night minimum and RH at 15:00 live only in `data/processed/crosschecks.parquet`. Cloud cover enters with a one-day lag (D-1).
+34. Every fitted statistic (scaler, percentiles, climatology, calibration) is fitted on training years only; any cross-validation inside train is grouped by year.
+35. The test split is locked: model code reads rows through `leakage.model_rows` (train and validation only); only `pipelines/06_final_eval.py --i-confirm-final` may load the test split, once, writing `reports/final_test_metrics.json`.
+36. Every metric is reported pooled, per cell and as the macro-average over the 8 cells, with skill against the best baseline (climatology, persistence).
+37. `make test` (pytest, leakage and integrity tests) and `make lint` (ruff) must pass before any result is reported. Notebooks only present saved outputs and import only `frostwatch_ml` (`tools/check_notebooks.py`).
+38. Artifact policy: `reports/` (small text and PNG) and `experiments/` in git; `data/` and `models/` in DVC (DagsHub). The model card says "validation metrics only; test pending" until the final evaluation exists. The backend serves the logistic regression from `reports/<model_version>/lr_export.json` with `frostwatch_ml.inference.predict` (numpy and pandas only, no pickle).
+39. Pipeline scripts run `dvc status`, `dvc push`, `dvc status -c` at the end (one attempt, non-fatal) unless `--no-sync`; on 401 or 403 they stop syncing and report.
+40. The model is valid only for the 8 cells in `configs/points.yaml`.
 
 Muse usage
 20. Use `muse-spark-1.3` through the Meta Model API in Standard mode. Temperature 0, strict JSON output, versioned prompts in `prompts/`.
@@ -45,7 +56,7 @@ Muse usage
 24. Alert explanations: one batched, cached call per alert. Verify every number against the model output, and fall back to a template if the check fails. Skip the LLM when risk is below the watch level.
 
 Scope
-25. Out of scope, do not build: Telegram, chat, agent or tool calling, cloud deploy, Postgres, web version, Android, 48 h horizon, open-weights hosting, DVC, MODIS (only if everything else is done).
+25. Out of scope, do not build: Telegram, chat, agent or tool calling, Postgres, a shipped web version (Expo web is used only for local testing), Android, 48 h horizon, open-weights hosting, MODIS (only if everything else is done). DVC with the DagsHub remote is in scope for data and model binaries only. A backend deploy to AWS is planned by the builder; the mobile app is never containerized.
 26. Cut order if behind: Round 2 extras, random forest and LightGBM, custom pin, English dictionary, Muse explanations (use templates), the Muse experiment (report as future work and ship A).
 27. Never cut: chronological split with baselines and honest metrics, the final logistic regression, email and push for a replayed test night, the README with results and a "Meta tooling used" table, the 3-minute video.
 28. Before ending any session: update docs/status.md and list what is ready for the builder to commit.
@@ -60,7 +71,7 @@ External services
 ### 3.1 User flow (iPhone, Expo Go)
 1. **Onboarding:** language (Spanish by default), profile (producer or resident), optional crops and livestock, optional email (double opt-in with a confirmation link), notification permission.
 2. **Select areas of interest (AOI):** only inside the coverage of the 8 downloaded points in `configs/points.yaml` (El Alto, Oruro, Patacamaya, Calamarca, Caracollo, Corocoro, Charana, Huanuni), one ERA5-Land cell each. No other places. Each AOI has a user threshold of 30, 50 or 70 percent.
-3. **Risk view per AOI:** the night's date, the label "reanalysis data", probability, level (none, watch, alert), conditions for that night, time the night was processed.
+3. **Risk view per AOI:** the night's date, the label "reanalysis data", probability, level from the cuts in `lr_export.json` (p < 0.3 none; 0.3 to 0.7 watch; >= 0.7 alert), conditions for that night, time the night was processed.
 4. **Alert arrives** by email and by in-app push.
 5. **Alert detail:** headline, why, what to do (by profile), caveats, and "how this was computed" (model version and a validation metrics summary).
 6. **Feed:** alert history per AOI.
@@ -108,14 +119,19 @@ Store only email, push token, language, profile and AOI coordinates. Provide dat
 ### 3.6 Commands to implement
 ```
 python pipelines/01_download.py --config configs/points.yaml
-python pipelines/02_features.py
-python pipelines/02b_eda.py
-python pipelines/03_split.py
-python pipelines/04_train_eval.py --round 1
-python pipelines/04_train_eval.py --round 2
+pip install -e .
+dvc pull
+make test && make lint
+python pipelines/02a_eda_era5land.py
+python pipelines/02b_eda_agera5.py
+python pipelines/03_build_night_table.py
+python pipelines/03b_eda_merged.py
+python pipelines/04_round1.py
+python pipelines/05_round2.py
+python pipelines/05b_export_artifacts.py
 python pipelines/05_muse_correct.py --config configs/muse.yaml
-python pipelines/run_experiment.py configs/experiments/<id>.yaml
-python pipelines/06_compare.py
+dvc repro          # the whole chain
+python pipelines/06_final_eval.py --i-confirm-final   # once, at the end
 uvicorn src.serve.main:app --reload
 cd mobile && npx expo start
 ```
@@ -136,15 +152,20 @@ cd mobile && npx expo start
 ```
 frostwatch-altiplano/
   README.md  muse.md  PROJECT_CONTEXT.md  .env.example  .gitignore  requirements.txt
-  configs/       points.yaml, split.yaml, muse.yaml, experiments/
-  pipelines/     numbered scripts and run_experiment.py
+  configs/       points.yaml, cds_datasets.yaml, frost.yaml, features.yaml, model.yaml, muse.yaml
+  pipelines/     thin CLIs: 01_download, 02a/02b EDA, 03 night table, 03b EDA, 04_round1, 05_round2, 05b_export_artifacts, 06_final_eval
+  src/frostwatch_ml/  ML package (data io, features, leakage guards, models, evaluation, artifacts, inference)
   prompts/       versioned Muse prompts
-  experiments/   <run_id>/ config.yaml metrics.json predictions.csv
+  reports/       git: model cards, lr_export.json, validation tables, figures
+  models/        DVC: model.joblib per model version
+  experiments/   git: <run_id>/ config.yaml metrics.json
+  dvc/           DVC pointer files (raw_cds.dvc); dvc.yaml, dvc.lock at the root
   src/serve/     API, tick and replay, notify, explain
   mobile/        Expo app
   docs/          decisions.md, eda.md, metrics.md, status.md, muse_usage.md
   logs/          sample_muse_calls.jsonl (sanitized)
-  tests/
+  tests/         pytest leakage and integrity tests
+  tools/         check_notebooks.py
   data/          gitignored
 ```
-`.gitignore` must include: `.env`, `.venv/`, `node_modules/`, `__pycache__/`, `data/`, `*.db`, `.muse/`, `.expo/`, `.claude/settings.local.json`, `logs/muse_cache/` and raw files in `logs/`.
+`.gitignore` must include: `.env`, `.venv/`, `node_modules/`, `__pycache__/`, `data/`, `*.db`, `.muse/`, `.expo/`, `.claude/settings.local.json`, `logs/muse_cache/` and raw files in `logs/`, plus `models/`, `.dvc/config.local`, `.dvc/cache` and `.dvc/tmp`.

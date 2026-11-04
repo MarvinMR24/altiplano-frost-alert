@@ -1,0 +1,47 @@
+[
+  {
+    "run_id": "r1-majority-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-majority-fbbf62c6"
+  },
+  {
+    "run_id": "r1-climatology-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-climatology-fbbf62c6"
+  },
+  {
+    "run_id": "r1-persistence-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-persistence-fbbf62c6"
+  },
+  {
+    "run_id": "r1-dewpoint_rule-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-dewpoint_rule-fbbf62c6"
+  },
+  {
+    "run_id": "r1-lr_none-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-lr_none-fbbf62c6"
+  },
+  {
+    "run_id": "r1-lr_balanced-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-lr_balanced-fbbf62c6"
+  },
+  {
+    "run_id": "r1-xgboost-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-xgboost-fbbf62c6"
+  },
+  {
+    "run_id": "r1-lightgbm-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-lightgbm-fbbf62c6"
+  },
+  {
+    "run_id": "r1-random_forest-fbbf62c6",
+    "mlflow_url": null,
+    "experiment_dir": "experiments/r1-random_forest-fbbf62c6"
+  }
+]

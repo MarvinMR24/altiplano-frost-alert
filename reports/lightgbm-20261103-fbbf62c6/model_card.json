@@ -1,0 +1,113 @@
+{
+  "model_version": "lightgbm-20261103-fbbf62c6",
+  "model_name": "TREE_best",
+  "role": "comparison_only",
+  "status": "validation metrics only; test pending",
+  "created_utc": "2026-11-03T09:27:53Z",
+  "intended_use": "Probability of radiation frost (2 m temperature <= 0 C) for the coming night at the 8 ERA5-Land cells of the La Paz to Oruro altiplano corridor, for crops, livestock, water pipes, vehicles, road ice and property. Not medical or health advice.",
+  "params": {
+    "n_estimators": 800,
+    "learning_rate": 0.02,
+    "num_leaves": 31,
+    "min_child_samples": 100,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.6,
+    "reg_lambda": 1.0
+  },
+  "data": {
+    "source": "ERA5-Land hourly and AgERA5 daily (Copernicus Climate Data Store), reanalysis, not raw satellite imagery",
+    "data_hash": "fbbf62c6cdf98c15222dedd608cfda3dfa86d69c8f181d96796a94b7ea206f71",
+    "features_manifest_sha256": "79bab44990b5a8a28a98b5eef29972499d946f0742f32faefdcfa363aed0f8d9",
+    "training_years": [
+      1985,
+      2009
+    ],
+    "validation_years": [
+      2010,
+      2017
+    ],
+    "test_years": [
+      2018,
+      2025
+    ],
+    "test_status": "locked"
+  },
+  "features": [
+    "t2m_1800_c",
+    "d2m_1800_c",
+    "dewpoint_depression_1800_c",
+    "rh_1800_pct",
+    "wind_1800_ms",
+    "sp_1800_hpa",
+    "ssrd_1800_wm2",
+    "strd_1800_wm2",
+    "ssrd_afternoon_mean_wm2",
+    "strd_afternoon_mean_wm2",
+    "skt_1800_c",
+    "stl1_1800_c",
+    "precip_24h_mm",
+    "prev_night_tmin_c",
+    "prev_night_frost",
+    "cooling_rate_1500_1800_c_per_h",
+    "doy_sin",
+    "doy_cos",
+    "latitude",
+    "elevation_proxy_m",
+    "sky_emissivity_1800",
+    "sky_emissivity_change_1500_1800",
+    "afternoon_clearness",
+    "cloud_cover_prev_day"
+  ],
+  "label_definition": "frost = 1 if the minimum hourly ERA5-Land t2m from 22:00 UTC of D to 13:00 UTC of D+1 (18:00 to 09:00 local, 16 values) is <= 0 C. tmin_c is that minimum. Labels come from the same reanalysis as the features.",
+  "time_convention": "Local time UTC-4. Night D: 18:00 snapshot at 22:00 UTC of D; label window 22:00 UTC of D to 13:00 UTC of D+1.",
+  "threshold": {
+    "value": 0.1704809220230249,
+    "selected_on": "validation",
+    "rule": "maximize F2"
+  },
+  "calibration": null,
+  "metrics_validation": {
+    "pooled": {
+      "n": 23376,
+      "base_rate": 0.3353439425051335,
+      "threshold": 0.1704809220230249,
+      "accuracy": 0.8231947296372347,
+      "majority_class_accuracy": 0.6646560574948666,
+      "precision": 0.6630587821189722,
+      "recall": 0.9612195433090955,
+      "f1": 0.7847732125188772,
+      "f2": 0.8819054307116105,
+      "roc_auc": 0.9512495892365227,
+      "pr_auc": 0.9104825077952943,
+      "brier": 0.08474120056592467,
+      "tp": 7535,
+      "fp": 3829,
+      "fn": 304,
+      "tn": 11708
+    },
+    "macro_over_cells": {
+      "accuracy": 0.8231947296372347,
+      "majority_class_accuracy": 0.6932323750855578,
+      "precision": 0.6331254899768419,
+      "recall": 0.9566434676954871,
+      "f1": 0.7565721687057301,
+      "f2": 0.8626931334489223,
+      "roc_auc": 0.9441240704731899,
+      "pr_auc": 0.8624228047226197,
+      "brier": 0.08474120056592466,
+      "base_rate": 0.33534394250513344
+    }
+  },
+  "metrics_test": null,
+  "limitations": [
+    "Labels come from the same ERA5-Land reanalysis as the features: the model predicts grid frost (0.1 degree cell), which is smoother than frost at a station or in a cold hollow.",
+    "ERA5-Land cells are about 9 km; local terrain and cold air pooling are not resolved.",
+    "Cloud information is a lagged proxy (AgERA5 24 h mean of the previous day); AgERA5 has its own 0.1 degree grid, which coincides with the ERA5-Land cells for these 8 points but can be offset by up to about 7 km in general.",
+    "Frost nights trend down over 1985-2025, so the test years (2018-2025) have a lower base rate than training (1985-2009).",
+    "Latitude and the elevation proxy are constants of the 8 training cells: the model is valid only for these 8 cells.",
+    "Data is reanalysis (published a few days late), not a live forecast; the model has not been evaluated on forecast inputs.",
+    "No confidence intervals are computed; small metric differences may be noise."
+  ],
+  "attribution": "Generated using Copernicus Climate Change Service information [2026]."
+}

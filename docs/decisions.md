@@ -46,3 +46,15 @@
 ## Reproducing the data
 - `dvc pull` restores `data/raw/cds/` (the zip archives, the AgERA5 files and the manifest) and the stage outputs under `data/processed/`. The `*_unzipped/` folders are not versioned and are not needed: `pipelines/common.py` extracts each zip into `data/processed/scratch/` when it reads it.
 - `dvc repro` reruns the stages in `dvc.yaml` with `.venv/bin/python`. The stages are deterministic: a rerun of the night table gave the same SHA-256 for `features.parquet`.
+
+## 2026-11-03: ML module (Part 2)
+- Package `src/frostwatch_ml` with thin CLIs. EDA report code lives in `frostwatch_ml/eda/`; quality rules in `prep/quality.py`.
+- Fitted statistics are stored in `data/processed/fitted_stats.json` together with the source dtype (float32), so the refactored night table equals Part 1 exactly.
+- Test-set lock: `leakage.model_rows` refuses the test split; only `pipelines/06_final_eval.py --i-confirm-final` can call `leakage.load_test_split`, once (it refuses to overwrite `reports/final_test_metrics.json`). The Part 1 EDA (`eda/merged.py`) keeps its descriptive class-balance and drift tables for the test years; no model touches them.
+- Validation predictions are written to `data/processed/predictions/<round>/<run_id>.csv` (DVC) instead of `experiments/<run_id>/`, so that no folder mixes git and DVC ownership; `experiments/<run_id>/` keeps config.yaml and metrics.json (git).
+- Data hash used in run ids and model versions: content hash of features.parquet (values, index, columns, dtypes), independent of the parquet writer version.
+- Model version date fixed to 20261103 in `configs/model.yaml` so reruns keep the same ids.
+- Thresholds maximize F2 on validation. Selection: validation PR-AUC, then F2. Calibration (sigmoid on out-of-fold log-odds, GroupKFold by year on training years) is kept only if it lowers the validation Brier score: kept for LR_best (Brier 0.091334 to 0.091330, negligible), dropped for TREE_best (Brier rose by 0.00005).
+- Level cuts 0.3 / 0.5 / 0.7 are named none, low, medium, high in `configs/model.yaml`; the mapping to the app levels (none, watch, alert) is left to the builder.
+- Pipeline scripts run `dvc status`, `dvc push`, `dvc status -c` at the end unless `--no-sync`; inside `dvc repro` the stages use `--no-sync` (DVC holds its lock) and `make repro` syncs afterwards. `FROSTWATCH_MLFLOW=0` disables the MLflow mirror (used for the `dvc repro` verification so runs are not duplicated).
+- `pipelines/01_download.py` is excluded from ruff so automatic fixes can never edit it.

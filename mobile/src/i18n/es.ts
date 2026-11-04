@@ -94,6 +94,7 @@ export const es = {
   'map.notYetKnown': 'Todavía no se conoce el resultado.',
   'map.elevation': 'Altitud {m} m',
   'map.modelVersion': 'Modelo {version}',
+  'map.webPreview': 'Vista web: mapa esquemático sin mapa base',
   'map.noData': 'No hay datos para esta noche.',
 
   'driver.up': 'sube el riesgo',

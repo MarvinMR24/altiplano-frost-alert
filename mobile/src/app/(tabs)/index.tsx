@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polygon, type Region } from 'react-native-maps';
+import MapView, { Marker, Polygon, type Region } from '@/ui/maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Cell } from '@/api/client';

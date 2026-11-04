@@ -1,7 +1,7 @@
 schema: '2.0'
 stages:
   02a_eda_era5land:
-    cmd: .venv/bin/python pipelines/02a_eda_era5land.py
+    cmd: .venv/bin/python pipelines/02a_eda_era5land.py --no-sync
     deps:
     - path: configs/frost.yaml
       hash: md5
@@ -18,20 +18,21 @@ stages:
       nfiles: 29
     - path: pipelines/02a_eda_era5land.py
       hash: md5
-      md5: d701bbc3335872b6144833f209017fcf
-      size: 11682
-    - path: pipelines/common.py
+      md5: 6c163da1951cab5a919cc1a171614960
+      size: 681
+    - path: src/frostwatch_ml
       hash: md5
-      md5: 97381ff775e68ebcc6b3a98bb2adf206
-      size: 7165
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
     outs:
     - path: data/processed/anomalies.parquet
       hash: md5
-      md5: 89130bd3efe94cbf61d78cd151a45d90
+      md5: 7815f5f14db6edf1e8d7f0405a049920
       size: 389185
     - path: data/processed/eda_era5land
       hash: md5
-      md5: 6b7b94dc078210871f17a687970f3a6d.dir
+      md5: f584bf929f10cd9a4a3282728a43412e.dir
       size: 1015344
       nfiles: 9
     - path: docs/eda_era5land.md
@@ -47,7 +48,7 @@ stages:
       md5: 94351f725ab6162f65c5c4ea4f6432ac
       size: 119236
   02b_eda_agera5:
-    cmd: .venv/bin/python pipelines/02b_eda_agera5.py
+    cmd: .venv/bin/python pipelines/02b_eda_agera5.py --no-sync
     deps:
     - path: configs/frost.yaml
       hash: md5
@@ -64,16 +65,17 @@ stages:
       nfiles: 29
     - path: pipelines/02b_eda_agera5.py
       hash: md5
-      md5: 3abdfac7c7b1eae57d3ecb0e4d50d012
-      size: 9819
-    - path: pipelines/common.py
+      md5: 84980446da2b1bf9898e995625c8ccc1
+      size: 682
+    - path: src/frostwatch_ml
       hash: md5
-      md5: 97381ff775e68ebcc6b3a98bb2adf206
-      size: 7165
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
     outs:
     - path: data/processed/eda_agera5
       hash: md5
-      md5: 723f28fdd5bd5a4b79baaf1372d1385a.dir
+      md5: a63e8116280dd2be3107e5155239286f.dir
       size: 4365616
       nfiles: 5
     - path: docs/eda_agera5.md
@@ -89,8 +91,12 @@ stages:
       md5: 979bc933e84df93e02cc3e36157ec974
       size: 89031
   03_build_night_table:
-    cmd: .venv/bin/python pipelines/03_build_night_table.py
+    cmd: .venv/bin/python pipelines/03_build_night_table.py --no-sync
     deps:
+    - path: configs/features.yaml
+      hash: md5
+      md5: 36fc264f9e8f1a8ce740b0b97a1b55de
+      size: 3262
     - path: configs/frost.yaml
       hash: md5
       md5: db84cbf6d601b38ab97fd882c5e3af2d
@@ -106,48 +112,54 @@ stages:
       nfiles: 29
     - path: pipelines/03_build_night_table.py
       hash: md5
-      md5: 7f1adea15a729dc87b25e2215f2e53f3
-      size: 10587
-    - path: pipelines/common.py
+      md5: ce009154d2923929a898c42b0e9c1897
+      size: 1053
+    - path: src/frostwatch_ml
       hash: md5
-      md5: 97381ff775e68ebcc6b3a98bb2adf206
-      size: 7165
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
     outs:
     - path: data/processed/crosschecks.parquet
       hash: md5
-      md5: 57052ad744f535c6b3129eb89f106011
+      md5: 10e5b1f7d5429196a7e267e07d8eb5f2
       size: 3096874
     - path: data/processed/features.parquet
       hash: md5
-      md5: fe8f22c33e852ff9cf99de99168f752f
+      md5: a1af1d50128948eb849987f7671ac76a
       size: 14457921
     - path: data/processed/features_manifest.json
       hash: md5
-      md5: 713a3419c152ccdd6376cfd00694717b
-      size: 4665
+      md5: 923bbc2cebd27ff089ca8e74298af72f
+      size: 4774
+    - path: data/processed/fitted_stats.json
+      hash: md5
+      md5: 767e9efd0dd3e4de3e070ab086a49ea4
+      size: 72512
   03b_eda_merged:
-    cmd: .venv/bin/python pipelines/03b_eda_merged.py
+    cmd: .venv/bin/python pipelines/03b_eda_merged.py --no-sync
     deps:
     - path: data/processed/crosschecks.parquet
       hash: md5
-      md5: 57052ad744f535c6b3129eb89f106011
+      md5: 10e5b1f7d5429196a7e267e07d8eb5f2
       size: 3096874
     - path: data/processed/features.parquet
       hash: md5
-      md5: fe8f22c33e852ff9cf99de99168f752f
+      md5: a1af1d50128948eb849987f7671ac76a
       size: 14457921
     - path: data/processed/features_manifest.json
       hash: md5
-      md5: 713a3419c152ccdd6376cfd00694717b
-      size: 4665
+      md5: 923bbc2cebd27ff089ca8e74298af72f
+      size: 4774
     - path: pipelines/03b_eda_merged.py
       hash: md5
-      md5: 920a1690212020f6ee3517fc112e09f6
-      size: 9355
-    - path: pipelines/common.py
+      md5: 68648c1207e98b72c768f5e16da2f289
+      size: 657
+    - path: src/frostwatch_ml
       hash: md5
-      md5: 97381ff775e68ebcc6b3a98bb2adf206
-      size: 7165
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
     outs:
     - path: data/processed/eda_merged
       hash: md5
@@ -166,3 +178,154 @@ stages:
       hash: md5
       md5: 40e150a18cf2e72780e06fb21dd28d92
       size: 55551
+  round1:
+    cmd: .venv/bin/python pipelines/04_round1.py --no-sync
+    deps:
+    - path: configs/features.yaml
+      hash: md5
+      md5: 36fc264f9e8f1a8ce740b0b97a1b55de
+      size: 3262
+    - path: configs/model.yaml
+      hash: md5
+      md5: 178cb4f213b76b998461877e23fc340d
+      size: 1803
+    - path: data/processed/features.parquet
+      hash: md5
+      md5: a1af1d50128948eb849987f7671ac76a
+      size: 14457921
+    - path: data/processed/features_manifest.json
+      hash: md5
+      md5: 923bbc2cebd27ff089ca8e74298af72f
+      size: 4774
+    - path: pipelines/04_round1.py
+      hash: md5
+      md5: be89ad14bac821f872661885d3285182
+      size: 6074
+    - path: src/frostwatch_ml
+      hash: md5
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
+    outs:
+    - path: data/processed/predictions/r1
+      hash: md5
+      md5: 7f2d41dedafbccb8c7017810d811bfda.dir
+      size: 8098423
+      nfiles: 9
+    - path: docs/model_round1.md
+      hash: md5
+      md5: f22b45c05fee75f6899b9fba415da92e
+      size: 7868
+    - path: reports/round1
+      hash: md5
+      md5: 2cb9c748ea4490278a4af3cbaf2fa9af.dir
+      size: 106797
+      nfiles: 16
+  round2:
+    cmd: .venv/bin/python pipelines/05_round2.py --no-sync
+    deps:
+    - path: configs/features.yaml
+      hash: md5
+      md5: 36fc264f9e8f1a8ce740b0b97a1b55de
+      size: 3262
+    - path: configs/model.yaml
+      hash: md5
+      md5: 178cb4f213b76b998461877e23fc340d
+      size: 1803
+    - path: data/processed/features.parquet
+      hash: md5
+      md5: a1af1d50128948eb849987f7671ac76a
+      size: 14457921
+    - path: data/processed/features_manifest.json
+      hash: md5
+      md5: 923bbc2cebd27ff089ca8e74298af72f
+      size: 4774
+    - path: pipelines/05_round2.py
+      hash: md5
+      md5: 230a147066d25aaa1d3ef6f7d76ad2e1
+      size: 12076
+    - path: reports/round1/comparison_pooled.csv
+      hash: md5
+      md5: fa6c124648363659d9bb919df619de8c
+      size: 1996
+    - path: src/frostwatch_ml
+      hash: md5
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
+    outs:
+    - path: data/processed/model_candidates.json
+      hash: md5
+      md5: 9ba3dd7e00b3b056ef74d03a011ed973
+      size: 4043
+    - path: data/processed/predictions/r2
+      hash: md5
+      md5: 3097c733eb1e0117ea6f2a4bc9e62bc5.dir
+      size: 2044749
+      nfiles: 2
+    - path: docs/model_round2.md
+      hash: md5
+      md5: 35ab5838fbb71392c27760ba6e48a2ec
+      size: 5595
+    - path: models
+      hash: md5
+      md5: cdf710bd1a17ef548696396e55877ea9.dir
+      size: 2817145
+      nfiles: 4
+    - path: reports/round2
+      hash: md5
+      md5: 48be7949139f2fcac25f7f888abcf71f.dir
+      size: 24877
+      nfiles: 20
+  export:
+    cmd: .venv/bin/python pipelines/05b_export_artifacts.py --no-sync
+    deps:
+    - path: configs/features.yaml
+      hash: md5
+      md5: 36fc264f9e8f1a8ce740b0b97a1b55de
+      size: 3262
+    - path: configs/model.yaml
+      hash: md5
+      md5: 178cb4f213b76b998461877e23fc340d
+      size: 1803
+    - path: data/processed/features.parquet
+      hash: md5
+      md5: a1af1d50128948eb849987f7671ac76a
+      size: 14457921
+    - path: data/processed/features_manifest.json
+      hash: md5
+      md5: 923bbc2cebd27ff089ca8e74298af72f
+      size: 4774
+    - path: data/processed/model_candidates.json
+      hash: md5
+      md5: 9ba3dd7e00b3b056ef74d03a011ed973
+      size: 4043
+    - path: models
+      hash: md5
+      md5: cdf710bd1a17ef548696396e55877ea9.dir
+      size: 2817145
+      nfiles: 4
+    - path: pipelines/05b_export_artifacts.py
+      hash: md5
+      md5: b0096d2b52b8a6fda543f46ba7031846
+      size: 7651
+    - path: src/frostwatch_ml
+      hash: md5
+      md5: 7f4d75421535595a2e503baf67b4feb4.dir
+      size: 107749
+      nfiles: 48
+    outs:
+    - path: reports/README.md
+      hash: md5
+      md5: a5c80579f56d13f89956d9ae6cdc79aa
+      size: 1085
+    - path: reports/lightgbm-20261103-fbbf62c6
+      hash: md5
+      md5: 8474959cc20b9f028611512f40377940.dir
+      size: 45194
+      nfiles: 9
+    - path: reports/lr-20261103-fbbf62c6
+      hash: md5
+      md5: 813073e2259c47843fb7a45e76808e98.dir
+      size: 51855
+      nfiles: 11

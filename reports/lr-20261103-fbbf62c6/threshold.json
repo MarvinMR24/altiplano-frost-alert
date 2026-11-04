@@ -1,0 +1,16 @@
+{
+  "threshold": 0.1724319670441336,
+  "selected_on": "validation",
+  "rule": "maximize F2",
+  "level_cuts": [
+    0.3,
+    0.5,
+    0.7
+  ],
+  "levels": [
+    "none",
+    "low",
+    "medium",
+    "high"
+  ]
+}

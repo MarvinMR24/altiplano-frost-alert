@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: frostwatch-ml
+Version: 0.2.0
+Summary: Leak-free frost prediction pipeline for ERA5-Land cells of the Bolivian altiplano
+Requires-Python: >=3.11

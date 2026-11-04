@@ -1,7 +1,7 @@
 # Spec 01: Backend and serving
 
 Status: approved
-Module: `backend/` (FastAPI + SQLite, local, exposed through ngrok)
+Module: `backend/` (FastAPI + SQLite in Docker; local first, AWS deploy planned)
 Depends on: `docs/api_contract.md`, `docs/artifacts_contract.md`, spec 02
 
 ## Why
@@ -56,8 +56,10 @@ demo depends on a replay of a real test-period frost night that runs from one co
 8. No email is sent to an unverified address (test).
 9. `DELETE /me` leaves no rows for that user in any table (test).
 10. No secret appears in logs, responses or error messages (test with a fake key value).
-11. `docker compose up` starts backend and ngrok, and `GET /health` answers through the
-    public URL.
+11. `docker compose up` starts the backend only and `GET /health` answers on
+    `http://localhost:8000`. The mobile app is not part of Compose.
+12. The Expo web origin (`CORS_ORIGINS`) can call the API from the browser (local testing).
+13. After the AWS deploy, `GET /health` answers on the public URL used by Expo Go.
 
 ## Open items
 

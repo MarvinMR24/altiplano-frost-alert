@@ -1,0 +1,11 @@
+{
+  "majority": 0.38072289156626504,
+  "climatology": 0.216,
+  "persistence": 1.0,
+  "dewpoint_rule": -1.236846923828125,
+  "lr_none": 0.1693810612295944,
+  "lr_balanced": 0.2784455775772499,
+  "xgboost": 0.19891221821308136,
+  "lightgbm": 0.16223525745262415,
+  "random_forest": 0.22
+}

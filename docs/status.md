@@ -122,3 +122,59 @@ Next
 2. ml and backend sessions: review `docs/artifacts_contract.md`.
 3. Builder: scan the QR with the iPhone (mock mode), then point the app at the backend.
 4. Phase 2 (after "CDS finished"): move the ml code into `ml/`.
+
+## Model (2026-11-03, validation only; test locked)
+- ML package `src/frostwatch_ml` (`pip install -e .`); thin CLIs in `pipelines/`; `make test` (40 tests, 14 leakage and integrity checks) and `make lint` pass.
+- Refactor regression: features, anomalies and crosschecks parquet files are identical in content to Part 1 (`DataFrame.equals`, same dtypes). File SHA-256 differs only through the parquet writer version (pyarrow 26.0.0 then, 25.0.1 now because mlflow 3.17.2 requires pyarrow < 26).
+- Round 1 (validation 2010-2017, pooled PR-AUC / F2): climatology 0.8135 / 0.8470, persistence 0.6573 / 0.7594, lr_none 0.8917 / 0.8759, lightgbm 0.9070 / 0.8804.
+- Round 2 finalists: LR_best `lr-20261103-fbbf62c6` (C 1.0, L1, no class weight, sigmoid calibration with negligible Brier change) PR-AUC 0.8918, F2 0.8757, macro PR-AUC 0.8374; TREE_best `lightgbm-20261103-fbbf62c6` (comparison only) PR-AUC 0.9105, F2 0.8819, macro PR-AUC 0.8624.
+- Artifacts: `reports/<model_version>/` (git), `models/<model_version>/` (DVC). MLflow runs on DagsHub, experiment "frostwatch-altiplano" (links in `reports/mlflow_links.json`). `dvc repro` reproduces the whole chain with identical metrics; `dvc status -c` in sync.
+- Next: the builder decides the risk-level mapping (cuts 0.3 / 0.5 / 0.7 give 4 bands vs none / watch / alert in CLAUDE.md 3.1), applies HANDOFF/spec_patch.md, then runs `pipelines/06_final_eval.py --i-confirm-final` once.
+
+## Backend (2026-11-03)
+Done
+- FastAPI + SQLite backend in `backend/app` implementing every endpoint of `docs/api_contract.md`, plus `GET /health`, `DELETE /me` and `POST /alerts/{id}/read`.
+- Email code login (console or SMTP STARTTLS), JWT sessions for 30 days, rate limits, strict validation.
+- Coverage (30 km circles, shapely) and AOI validation; AOI risk from the containing cell (highest probability on overlap).
+- DataProvider `mock` (everything flagged MOCK) and `artifacts` (read-only, schema validated, clear 503 on errors).
+- Alerting: dedupe (one per AOI per night, re-alert on a level rise, at most 2 per 24 h of the night clock), idempotent; deliveries recorded; Expo push batches of 100 with ticket ids.
+- Explanations: catalog (producer, resident; ES, EN; no health advice), template, muse-spark only with `MUSE_MOCK=0`, cached by facts hash, number verifier with template fallback.
+- CLI: `replay`, `tick`, `seed-demo`. 72 pytest tests and ruff pass (`backend/`).
+Pending
+- Real artifacts from the ML session (`artifacts/model_card.json`, `artifacts/predictions/*.parquet`) in the contract shape; see `docs/backend_notes.md`.
+- A real SMTP send (Gmail app password), a real Expo push to the iPhone, and a real Muse call (`MUSE_MOCK=0`): none was run in this session.
+- `docker build` not run (Docker daemon off); a clean venv install from `backend/requirements.txt` was verified instead.
+Known issues
+- Level names differ between CLAUDE.md, the contract and `lr_export.json`; the backend uses the contract names.
+- `.gitignore` (`.env.*`) ignores `backend/.env.backend.example`; needs `!backend/.env.backend.example`.
+- In-memory rate limiter (one process). Expo receipts are not polled.
+How to run (from `backend/`)
+```
+python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/uvicorn app.main:app --port 8000
+.venv/bin/pytest && .venv/bin/ruff check .
+.venv/bin/python -m app.cli seed-demo --email you@example.com
+.venv/bin/python -m app.cli replay --night YYYY-MM-DD --email you@example.com [--dry-run]
+.venv/bin/python -m app.cli tick [--night YYYY-MM-DD]
+```
+
+## Mobile out of Docker, local web testing (2026-11-03)
+
+- Builder decision: the mobile app is not containerized. It runs on the host. Test plan: local
+  web first (`cd mobile && npx expo start --web`, backend on `http://localhost:8000`), then
+  Expo Go on the iPhone after the backend is deployed to AWS.
+- Removed: `mobile` service from `docker-compose.yml`, `mobile/Dockerfile`,
+  `mobile/.dockerignore`, `HOST_LAN_IP`. `docker compose up` now starts the backend only;
+  ngrok moved behind the optional `tunnel` profile.
+- Web support for testing: added `react-dom@19.3.0`, `react-native-web@~0.21.4`,
+  `@expo/metro-runtime@~58.0.16` (SDK 58 versions). `src/ui/maps.web.tsx` is a schematic map
+  stand-in (react-native-maps has no web build); screens import `@/ui/maps`.
+  `src/auth/session.web.ts` stores the token in localStorage. New i18n key `map.webPreview`.
+- Backend: CORS for the Expo web origin (`CORS_ORIGINS`, default
+  `http://localhost:8081,http://127.0.0.1:8081`).
+- Specs updated: 01 (acceptance 11 to 13), 03 (test environments, acceptance 9 to 11),
+  `docs/architecture.md`, `mobile/README.md`, MUSE.md and CLAUDE.md rule 25.
+- Checks: `npx tsc --noEmit` passes; `npx expo export --platform web` bundles; mock flow
+  checked in a headless browser (login, map with 8 cells, polygon drawing); backend 72 tests
+  pass and ruff is clean; CORS preflight allows localhost:8081 and rejects other origins.
+- Not run: `docker build` (Docker off), `npx expo-doctor` (Expo API blocked from the VM).

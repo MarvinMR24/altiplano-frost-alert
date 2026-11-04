@@ -95,6 +95,7 @@ export const en: Record<TranslationKey, string> = {
   'map.notYetKnown': 'Outcome not known yet.',
   'map.elevation': 'Elevation {m} m',
   'map.modelVersion': 'Model {version}',
+  'map.webPreview': 'Web preview: schematic map without a base map',
   'map.noData': 'No data for this night.',
 
   'driver.up': 'raises risk',

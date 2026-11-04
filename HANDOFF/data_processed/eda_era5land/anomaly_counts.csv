@@ -1,6 +1,0 @@
-rule,field,count
-hourly_jump,d2m_c,3818
-hourly_jump,skt_c,1
-hourly_jump,t2m_c,218
-precipitation_negative,tp_mm,38321
-ssrd_negative,ssrd_wm2,802

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frostwatch-ml"
+version = "0.2.0"
+description = "Leak-free frost prediction pipeline for ERA5-Land cells of the Bolivian altiplano"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "pipelines", "tests", "tools"]
+extend-exclude = ["pipelines/01_download.py", "notebooks", "HANDOFF", "ml", "backend", "mobile", "artifacts", "spec-driven-development"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"pipelines/*.py" = ["E402"]
+"src/frostwatch_ml/eda/*.py" = ["E402", "E702"]
+"src/frostwatch_ml/evaluation/plots.py" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

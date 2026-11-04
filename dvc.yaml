@@ -3,10 +3,10 @@
 # in git (cache: false); data outputs live in the DVC cache and the DagsHub remote.
 stages:
   02a_eda_era5land:
-    cmd: .venv/bin/python pipelines/02a_eda_era5land.py
+    cmd: .venv/bin/python pipelines/02a_eda_era5land.py --no-sync
     deps:
       - pipelines/02a_eda_era5land.py
-      - pipelines/common.py
+      - src/frostwatch_ml
       - configs/frost.yaml
       - configs/points.yaml
       - data/raw/cds
@@ -21,10 +21,10 @@ stages:
           cache: false
 
   02b_eda_agera5:
-    cmd: .venv/bin/python pipelines/02b_eda_agera5.py
+    cmd: .venv/bin/python pipelines/02b_eda_agera5.py --no-sync
     deps:
       - pipelines/02b_eda_agera5.py
-      - pipelines/common.py
+      - src/frostwatch_ml
       - configs/frost.yaml
       - configs/points.yaml
       - data/raw/cds
@@ -38,23 +38,25 @@ stages:
           cache: false
 
   03_build_night_table:
-    cmd: .venv/bin/python pipelines/03_build_night_table.py
+    cmd: .venv/bin/python pipelines/03_build_night_table.py --no-sync
     deps:
       - pipelines/03_build_night_table.py
-      - pipelines/common.py
+      - src/frostwatch_ml
       - configs/frost.yaml
+      - configs/features.yaml
       - configs/points.yaml
       - data/raw/cds
     outs:
       - data/processed/features.parquet
       - data/processed/crosschecks.parquet
       - data/processed/features_manifest.json
+      - data/processed/fitted_stats.json
 
   03b_eda_merged:
-    cmd: .venv/bin/python pipelines/03b_eda_merged.py
+    cmd: .venv/bin/python pipelines/03b_eda_merged.py --no-sync
     deps:
       - pipelines/03b_eda_merged.py
-      - pipelines/common.py
+      - src/frostwatch_ml
       - data/processed/features.parquet
       - data/processed/crosschecks.parquet
       - data/processed/features_manifest.json
@@ -65,4 +67,58 @@ stages:
       - docs/figures/merged_frost_rate_by_year.png:
           cache: false
       - docs/figures/merged_corr_with_label_train.png:
+          cache: false
+
+  round1:
+    cmd: .venv/bin/python pipelines/04_round1.py --no-sync
+    deps:
+      - pipelines/04_round1.py
+      - src/frostwatch_ml
+      - configs/model.yaml
+      - configs/features.yaml
+      - data/processed/features.parquet
+      - data/processed/features_manifest.json
+    outs:
+      - data/processed/predictions/r1
+      - reports/round1:
+          cache: false
+      - docs/model_round1.md:
+          cache: false
+
+  round2:
+    cmd: .venv/bin/python pipelines/05_round2.py --no-sync
+    deps:
+      - pipelines/05_round2.py
+      - src/frostwatch_ml
+      - configs/model.yaml
+      - configs/features.yaml
+      - data/processed/features.parquet
+      - data/processed/features_manifest.json
+      - reports/round1/comparison_pooled.csv
+    outs:
+      - models
+      - data/processed/model_candidates.json
+      - data/processed/predictions/r2
+      - reports/round2:
+          cache: false
+      - docs/model_round2.md:
+          cache: false
+
+  export:
+    cmd: .venv/bin/python pipelines/05b_export_artifacts.py --no-sync
+    deps:
+      - pipelines/05b_export_artifacts.py
+      - src/frostwatch_ml
+      - configs/model.yaml
+      - configs/features.yaml
+      - data/processed/features.parquet
+      - data/processed/features_manifest.json
+      - models
+      - data/processed/model_candidates.json
+    outs:
+      - reports/lr-20261103-fbbf62c6:
+          cache: false
+      - reports/lightgbm-20261103-fbbf62c6:
+          cache: false
+      - reports/README.md:
           cache: false

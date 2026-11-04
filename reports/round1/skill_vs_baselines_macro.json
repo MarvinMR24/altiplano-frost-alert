@@ -1,0 +1,74 @@
+[
+  {
+    "model": "majority",
+    "pr_auc": 0.33534394250513344,
+    "pr_auc_minus_best_baseline": -0.3956277900160121,
+    "f2": 0.683955096239707,
+    "f2_minus_best_baseline": -0.1441707302809172,
+    "brier_skill_vs_climatology": -0.8824321312820755
+  },
+  {
+    "model": "climatology",
+    "pr_auc": 0.7309717325211456,
+    "pr_auc_minus_best_baseline": 0.0,
+    "f2": 0.8281258265206242,
+    "f2_minus_best_baseline": 0.0,
+    "brier_skill_vs_climatology": 0.0
+  },
+  {
+    "model": "persistence",
+    "pr_auc": 0.6059935256814348,
+    "pr_auc_minus_best_baseline": -0.12497820683971073,
+    "f2": 0.7176058580800242,
+    "f2_minus_best_baseline": -0.11051996844059997,
+    "brier_skill_vs_climatology": -0.35068634266209897
+  },
+  {
+    "model": "dewpoint_rule",
+    "pr_auc": 0.6642162404205214,
+    "pr_auc_minus_best_baseline": -0.06675549210062415,
+    "f2": 0.7952204052229238,
+    "f2_minus_best_baseline": -0.032905421297700355,
+    "brier_skill_vs_climatology": NaN
+  },
+  {
+    "model": "lr_none",
+    "pr_auc": 0.8371763914814254,
+    "pr_auc_minus_best_baseline": 0.10620465896027986,
+    "f2": 0.8572039023204288,
+    "f2_minus_best_baseline": 0.029078075799804592,
+    "brier_skill_vs_climatology": 0.23537972753420244
+  },
+  {
+    "model": "lr_balanced",
+    "pr_auc": 0.8361778183953027,
+    "pr_auc_minus_best_baseline": 0.10520608587415714,
+    "f2": 0.8572802593432632,
+    "f2_minus_best_baseline": 0.029154432822639076,
+    "brier_skill_vs_climatology": 0.18684669649937036
+  },
+  {
+    "model": "xgboost",
+    "pr_auc": 0.8507870309808381,
+    "pr_auc_minus_best_baseline": 0.11981529845969252,
+    "f2": 0.8599816146083508,
+    "f2_minus_best_baseline": 0.0318557880877266,
+    "brier_skill_vs_climatology": 0.26075201234455736
+  },
+  {
+    "model": "lightgbm",
+    "pr_auc": 0.8574244060946682,
+    "pr_auc_minus_best_baseline": 0.12645267357352263,
+    "f2": 0.8610125435214036,
+    "f2_minus_best_baseline": 0.032886717000779386,
+    "brier_skill_vs_climatology": 0.27739056128655737
+  },
+  {
+    "model": "random_forest",
+    "pr_auc": 0.8469994096719491,
+    "pr_auc_minus_best_baseline": 0.11602767715080353,
+    "f2": 0.8591762766792147,
+    "f2_minus_best_baseline": 0.031050450158590537,
+    "brier_skill_vs_climatology": 0.26476038684263115
+  }
+]

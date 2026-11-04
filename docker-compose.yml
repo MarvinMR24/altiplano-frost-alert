@@ -1,9 +1,10 @@
-# FrostWatch Altiplano: three modules (ml, backend, mobile) plus an ngrok tunnel.
-# No secrets in this file. Values come from .env through ${VAR} substitution, and each
-# service gets only the variables it needs.
+# FrostWatch Altiplano: backend and ml, plus an optional ngrok tunnel.
+# The mobile app is not containerized: run it on the host (`cd mobile && npx expo start --web`
+# for local testing). No secrets in this file. Values come from .env through ${VAR}
+# substitution, and each service gets only the variables it needs.
 #
-#   docker compose up                              -> backend + ngrok
-#   docker compose --profile mobile up mobile      -> Expo dev server (best effort on macOS)
+#   docker compose up                               -> backend only (http://localhost:8000)
+#   docker compose --profile tunnel up              -> backend + ngrok (needs NGROK_AUTHTOKEN, NGROK_DOMAIN)
 #   docker compose run --rm ml python pipelines/... -> ml, on demand only (never via `up`)
 #
 # Never run `docker compose config` without --quiet: it prints interpolated secrets.
@@ -26,6 +27,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-}
       DATABASE_URL: sqlite:////app/var/frostwatch.db
       DATA_PROVIDER: ${DATA_PROVIDER:-mock}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081,http://127.0.0.1:8081}
       # CDS_API_KEY is intentionally NOT passed to the backend.
     volumes:
       - ./artifacts:/app/artifacts:ro
@@ -39,7 +41,10 @@ services:
       retries: 5
       start_period: 10s
 
+  # Optional public tunnel. The token and the static domain come from the builder's ngrok
+  # account (dashboard.ngrok.com); Docker only runs the agent.
   ngrok:
+    profiles: ["tunnel"]
     image: ngrok/ngrok:latest
     # --url replaces the deprecated --domain flag of the ngrok agent.
     command: ["http", "backend:8000", "--url=${NGROK_DOMAIN:-}"]
@@ -48,21 +53,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-
-  mobile:
-    profiles: ["mobile"]
-    build: ./mobile
-    environment:
-      REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_LAN_IP:-}
-      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-}
-      EXPO_PUBLIC_USE_MOCK: ${EXPO_PUBLIC_USE_MOCK:-1}
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./mobile:/app
-      - /app/node_modules
-    stdin_open: true
-    tty: true
 
   # ml: on demand only, `docker compose run --rm ml python pipelines/<script>.py ...`
   # NEVER run the CDS download through `up`, never in parallel, and never while another CDS
