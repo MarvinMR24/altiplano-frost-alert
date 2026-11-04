@@ -24,8 +24,9 @@ def test_load_test_split_refuses_without_flag_and_from_elsewhere(features):
 # Files allowed to contain the literal "test" next to a split: the guard itself, the split
 # definitions, descriptive Part 1 EDA (class balance and drift tables, no model), the model card
 # (prints the locked test years), the manifest reader (skips the small CDS test downloads, not a
-# split) and the final evaluation stub.
-ALLOWED = {"src/frostwatch_ml/leakage.py", "src/frostwatch_ml/splits.py", "src/frostwatch_ml/config.py",
+# split), the final evaluation, and the serving export (writes the contract key metrics.test and
+# gets its rows only through leakage.serving_rows, which needs the final report).
+ALLOWED = {"src/frostwatch_ml/artifacts/serving.py", "src/frostwatch_ml/leakage.py", "src/frostwatch_ml/splits.py", "src/frostwatch_ml/config.py",
            "src/frostwatch_ml/eda/merged.py", "src/frostwatch_ml/artifacts/model_card.py", "src/frostwatch_ml/dataio/manifest.py",
            "pipelines/06_final_eval.py"}
 TEST_LITERAL = re.compile(r"""["']test["']""")

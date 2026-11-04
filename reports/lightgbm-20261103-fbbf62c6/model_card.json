@@ -2,7 +2,7 @@
   "model_version": "lightgbm-20261103-fbbf62c6",
   "model_name": "TREE_best",
   "role": "comparison_only",
-  "status": "validation metrics only; test pending",
+  "status": "final test evaluation done (test evaluated once; thresholds fixed on validation)",
   "created_utc": "2026-11-03T09:27:53Z",
   "intended_use": "Probability of radiation frost (2 m temperature <= 0 C) for the coming night at the 8 ERA5-Land cells of the La Paz to Oruro altiplano corridor, for crops, livestock, water pipes, vehicles, road ice and property. Not medical or health advice.",
   "params": {
@@ -31,7 +31,7 @@
       2018,
       2025
     ],
-    "test_status": "locked"
+    "test_status": "evaluated"
   },
   "features": [
     "t2m_1800_c",
@@ -99,7 +99,43 @@
       "base_rate": 0.33534394250513344
     }
   },
-  "metrics_test": null,
+  "metrics_test": {
+    "years": [
+      2018,
+      2025
+    ],
+    "pooled": {
+      "n": 23376,
+      "base_rate": 0.31981519507186856,
+      "threshold": 0.1704809220230249,
+      "accuracy": 0.8354722792607803,
+      "majority_class_accuracy": 0.6801848049281314,
+      "precision": 0.667900092506938,
+      "recall": 0.965757089352595,
+      "f1": 0.7896751613256043,
+      "f2": 0.8866728889325539,
+      "roc_auc": 0.9551707350313455,
+      "pr_auc": 0.9089733731694941,
+      "brier": 0.07979500858760662,
+      "tp": 7220,
+      "fp": 3590,
+      "fn": 256,
+      "tn": 12310
+    },
+    "macro_over_cells": {
+      "accuracy": 0.8354722792607803,
+      "majority_class_accuracy": 0.7019164955509924,
+      "precision": 0.6399926657376148,
+      "recall": 0.9623318100072316,
+      "f1": 0.7636836682996486,
+      "f2": 0.8693677307328764,
+      "roc_auc": 0.9490143232252926,
+      "pr_auc": 0.859531417800409,
+      "brier": 0.07979500858760663,
+      "base_rate": 0.31981519507186856
+    },
+    "source": "reports/final_test_metrics.json"
+  },
   "limitations": [
     "Labels come from the same ERA5-Land reanalysis as the features: the model predicts grid frost (0.1 degree cell), which is smoother than frost at a station or in a cold hollow.",
     "ERA5-Land cells are about 9 km; local terrain and cold air pooling are not resolved.",
