@@ -2,38 +2,81 @@
   "candidates": [
     {
       "candidate": 1,
-      "muse_name": "dry_clear_cooling",
-      "formula": "dewpoint_depression_1800_c * (1 - sky_emissivity_1800)",
+      "muse_name": "cooling_extrap_6h_c",
+      "formula": "t2m_1800_c + 6 * cooling_rate_1500_1800_c_per_h",
       "category": "radiative_cooling",
-      "rationale": "mock: dry air under a clear sky cools faster",
+      "rationale": "Extrapolates late-afternoon cooling trend six hours to approximate midnight temperature.",
       "column": "muse_f1",
       "decision": "accepted",
       "names_used": [
-        "dewpoint_depression_1800_c",
-        "sky_emissivity_1800"
+        "cooling_rate_1500_1800_c_per_h",
+        "t2m_1800_c"
       ]
     },
     {
       "candidate": 2,
-      "muse_name": "calm_clear",
-      "formula": "afternoon_clearness / (1 + wind_1800_ms)",
-      "category": "wind",
-      "rationale": "mock: clear and calm evenings favor radiative cooling",
+      "muse_name": "soil_air_excess_c",
+      "formula": "stl1_1800_c - t2m_1800_c",
+      "category": "radiative_cooling",
+      "rationale": "Warmer soil than air stores daytime heat that slows nocturnal radiative cooling.",
       "column": "muse_f2",
       "decision": "accepted",
       "names_used": [
-        "afternoon_clearness",
-        "wind_1800_ms"
+        "stl1_1800_c",
+        "t2m_1800_c"
       ]
     },
     {
       "candidate": 3,
-      "muse_name": "bad_name",
-      "formula": "latitude + 1",
+      "muse_name": "dry_clear_index",
+      "formula": "log1p(max(dewpoint_depression_1800_c, 0)) * afternoon_clearness",
+      "category": "humidity_deficit",
+      "rationale": "Dry air combined with clear afternoon amplifies nocturnal radiative heat loss.",
+      "column": "muse_f3",
+      "decision": "accepted",
+      "names_used": [
+        "afternoon_clearness",
+        "dewpoint_depression_1800_c"
+      ]
+    },
+    {
+      "candidate": 4,
+      "muse_name": "calm_dry_index",
+      "formula": "max(3 - wind_1800_ms, 0) * dewpoint_depression_1800_c",
+      "category": "wind",
+      "rationale": "Calm winds below 3 m/s limit mixing while dry air enhances radiative cooling.",
+      "column": "muse_f4",
+      "decision": "accepted",
+      "names_used": [
+        "dewpoint_depression_1800_c",
+        "wind_1800_ms"
+      ]
+    },
+    {
+      "candidate": 5,
+      "muse_name": "clear_sky_persist",
+      "formula": "afternoon_clearness * max(1 - sky_emissivity_1800, 0)",
       "category": "cloud",
-      "rationale": "mock: invalid on purpose",
-      "column": null,
-      "decision": "rejected: unknown name 'latitude'"
+      "rationale": "Sustained clear skies from afternoon to evening maximize overnight longwave loss.",
+      "column": "muse_f5",
+      "decision": "accepted",
+      "names_used": [
+        "afternoon_clearness",
+        "sky_emissivity_1800"
+      ]
+    },
+    {
+      "candidate": 6,
+      "muse_name": "lw_drop_afternoon_evening",
+      "formula": "strd_afternoon_mean_wm2 - strd_1800_wm2",
+      "category": "cloud",
+      "rationale": "Falling longwave from afternoon to evening signals clearing skies and stronger cooling.",
+      "column": "muse_f6",
+      "decision": "accepted",
+      "names_used": [
+        "strd_1800_wm2",
+        "strd_afternoon_mean_wm2"
+      ]
     }
   ],
   "schema_errors": []

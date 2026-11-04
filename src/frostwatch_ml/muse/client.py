@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -84,7 +85,7 @@ def _parse_json(content: str | None) -> dict | None:
 
 class MuseClient:
     def __init__(self, cfg: dict, *, mock: bool | None = None, cache_dir: Path = CACHE_DIR, usage_log: Path = USAGE_LOG,
-                 transport: Callable[[str, dict, bytes, float], dict] | None = None):
+                 transport: Callable[[str, dict, bytes, float], dict] | None = None, verbose: bool = False):
         self.cfg = cfg
         self.mock = mock_enabled() if mock is None else mock
         self.cache_dir = Path(cache_dir)
@@ -93,6 +94,16 @@ class MuseClient:
         self.model = os.environ.get("MUSE_MODEL", cfg["model"])
         self.max_tokens = int(os.environ.get("MUSE_MAX_TOKENS", cfg["max_tokens"]))
         self.stats = CallStats()
+        self.verbose = verbose
+
+    def _say(self, msg: str) -> None:
+        if self.verbose:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}", file=sys.stdout, flush=True)
+
+    def _totals(self) -> str:
+        s = self.stats
+        return (f"run totals: {s.api_calls} api, {s.cache_hits} cache, {s.mock_calls} mock, {s.failed} failed, "
+                f"{s.prompt_tokens} in, {s.completion_tokens} out, {s.est_cost_usd:.4f} USD")
 
     def body(self, system: str, user: str) -> dict:
         return {"model": self.model, "temperature": self.cfg["temperature"], "max_tokens": self.max_tokens,
@@ -120,6 +131,7 @@ class MuseClient:
         if path.exists():
             entry = json.loads(path.read_text())
             self.stats.cache_hits += 1
+            self._say(f"  {purpose}: cache hit ({entry['status']}) | {self._totals()}")
             return CallResult(entry["status"], "mock_cache" if self.mock else "cache", _parse_json(entry["content"]),
                               entry["content"], entry.get("usage", {}), key)
         if self.mock:
@@ -129,6 +141,7 @@ class MuseClient:
                      "completion_tokens": costs.estimate_tokens(content, b["chars_per_token_estimate"]), "estimated": True}
             self._write_cache(path, key, purpose, prompt_version, body, None, content, usage, "ok")
             self.stats.mock_calls += 1
+            self._say(f"  {purpose}: mock answer | {self._totals()}")
             return CallResult("ok", "mock", _parse_json(content), content, usage, key)
         return self._real_call(purpose, prompt_version, body, key, path)
 
@@ -143,6 +156,8 @@ class MuseClient:
         if not api_key or not base:
             return self._failed(purpose, prompt_version, key, "META_API_KEY or META_API_BASE_URL not set", 0.0)
         url = base.rstrip("/") + "/chat/completions"
+        self._say(f"  {purpose}: calling {self.model} (max_tokens {self.max_tokens}, worst case {worst:.4f} USD, "
+                  f"experiment spent so far {spent:.4f} of {cap} USD)...")
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
         t0 = time.monotonic()
         try:
@@ -158,7 +173,13 @@ class MuseClient:
         except (KeyError, IndexError, TypeError):
             content = None
         u = raw.get("usage") or {}
-        usage = {"prompt_tokens": int(u.get("prompt_tokens") or 0), "completion_tokens": int(u.get("completion_tokens") or 0)}
+        try:
+            finish = raw["choices"][0].get("finish_reason")
+        except (KeyError, IndexError, TypeError, AttributeError):
+            finish = None
+        usage = {"prompt_tokens": int(u.get("prompt_tokens") or 0), "completion_tokens": int(u.get("completion_tokens") or 0),
+                 "reasoning_tokens": int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0),
+                 "finish_reason": finish}
         parsed = _parse_json(content)
         status = "ok" if parsed is not None else "invalid_json"
         cost = costs.cost_usd(usage["prompt_tokens"], usage["completion_tokens"], self.cfg["budget"])
@@ -167,10 +188,13 @@ class MuseClient:
         self.stats.est_cost_usd += cost
         self._write_cache(path, key, purpose, prompt_version, body, raw, content, usage, status)
         self._log_usage(purpose, prompt_version, key, status, usage, cost, latency, None)
+        self._say(f"  {purpose}: {status} in {latency:.1f}s, finish {finish}, {usage['prompt_tokens']} in, "
+                  f"{usage['completion_tokens']} out ({usage['reasoning_tokens']} reasoning), {cost:.4f} USD | {self._totals()}")
         return CallResult(status, "api", parsed, content, usage, key)
 
     def _failed(self, purpose: str, prompt_version: str, key: str, error: str, latency: float) -> CallResult:
         self.stats.failed += 1
+        self._say(f"  {purpose}: FAILED after {latency:.1f}s ({error}); logged, skipped, not retried")
         self._log_usage(purpose, prompt_version, key, "failed", {"prompt_tokens": 0, "completion_tokens": 0}, 0.0, latency, error)
         return CallResult("failed", "api", None, None, {}, key, error)
 
@@ -187,6 +211,8 @@ class MuseClient:
                                  "prompt_version": prompt_version, "model": self.model, "cache_key": key, "status": status,
                                  "prompt_tokens": usage.get("prompt_tokens", 0),
                                  "completion_tokens": usage.get("completion_tokens", 0),
+                                 "reasoning_tokens": usage.get("reasoning_tokens", 0),
+                                 "finish_reason": usage.get("finish_reason"),
                                  "est_cost_usd": round(cost, 6), "latency_s": round(latency, 2), "error": error}
         self.stats.log.append(entry)
         self.usage_log.parent.mkdir(parents=True, exist_ok=True)
