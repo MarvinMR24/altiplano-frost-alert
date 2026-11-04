@@ -72,6 +72,21 @@ class Settings:
     rate_limit_per_minute: int
     # Browser origins allowed by CORS (the Expo web dev server). Native apps ignore CORS.
     cors_origins: tuple[str, ...] = ("http://localhost:8081", "http://127.0.0.1:8081")
+    # Muse Spark reasons before answering (about 30 to 55 s per call in the experiment).
+    muse_timeout_s: int = 120
+    # Social sign in. Google needs a web OAuth client and the public backend URL (the
+    # redirect URI is PUBLIC_BASE_URL/auth/google/callback). Apple needs no secret: the
+    # identity token audience must be one of apple_audiences (Expo Go is host.exp.Exponent).
+    public_base_url: str = ""
+    google_client_id: str = ""
+    google_client_secret: str = field(default="", repr=False)
+    apple_audiences: tuple[str, ...] = ("host.exp.Exponent",)
+    # Deep links the Google flow may return to (Expo Go and the app scheme).
+    app_redirect_prefixes: tuple[str, ...] = ("exp://", "exps://", "frostwatch://")
+
+    @property
+    def google_enabled(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret and self.public_base_url)
 
     @property
     def is_production(self) -> bool:
@@ -122,7 +137,14 @@ def load_settings() -> Settings:
         meta_api_base_url=_env("META_API_BASE_URL"),
         muse_model=_env("MUSE_MODEL", "muse-spark-1.3"),
         muse_mock=_bool("MUSE_MOCK", True),
-        muse_max_tokens=_int("MUSE_MAX_TOKENS", 700),
+        # Reasoning tokens count toward max_tokens: the experiment used 2,700 to 5,400 of them per
+        # answer, and 700 left the reply empty (finish_reason length).
+        muse_max_tokens=_int("MUSE_MAX_TOKENS", 8000),
+        muse_timeout_s=_int("MUSE_TIMEOUT_S", 120),
+        public_base_url=_env("PUBLIC_BASE_URL").rstrip("/"),
+        google_client_id=_env("GOOGLE_CLIENT_ID"),
+        google_client_secret=_env("GOOGLE_CLIENT_SECRET"),
+        apple_audiences=tuple(a.strip() for a in _env("APPLE_AUDIENCES", "host.exp.Exponent").split(",") if a.strip()),
         muse_max_calls_per_run=_int("MUSE_MAX_CALLS_PER_RUN", 40),
         rate_limit_per_minute=_int("RATE_LIMIT_PER_MINUTE", 120),
         cors_origins=tuple(

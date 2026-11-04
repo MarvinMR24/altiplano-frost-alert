@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { api, ApiError, type EmailCodePurpose, type RegisterInput, type User, type UserPatch, type VerifyResponse } from '@/api/client';
 import { useI18n } from '@/i18n';
+import { appleCredential, googleTicket } from './providers';
 import { clearToken, loadToken, saveToken } from './session';
 
 type Status = 'loading' | 'signedOut' | 'signedIn';
@@ -17,6 +18,9 @@ interface AuthValue {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   completeSignIn: (result: VerifyResponse) => Promise<void>;
+  // Resolve to false when the user cancels the Apple or Google screen.
+  signInWithApple: () => Promise<boolean>;
+  signInWithGoogle: () => Promise<boolean>;
   updateUser: (patch: UserPatch) => Promise<User>;
   setUser: (user: User) => void;
   signOut: () => Promise<void>;
@@ -27,7 +31,7 @@ const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [user, setUserState] = useState<User | null>(null);
-  const { setLanguage } = useI18n();
+  const { setLanguage, language } = useI18n();
 
   const setUser = useCallback(
     (next: User) => {
@@ -111,6 +115,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [completeSignIn],
   );
 
+  const signInWithApple = useCallback(async () => {
+    const credential = await appleCredential();
+    if (!credential) return false;
+    await completeSignIn(
+      await api.signInWithApple({ identity_token: credential.identityToken, name: credential.name, language }),
+    );
+    return true;
+  }, [completeSignIn, language]);
+
+  const signInWithGoogle = useCallback(async () => {
+    const ticket = await googleTicket(language);
+    if (!ticket) return false;
+    await completeSignIn(await api.redeemLoginTicket(ticket));
+    return true;
+  }, [completeSignIn, language]);
+
   const updateUser = useCallback(
     async (patch: UserPatch) => {
       const next = await api.patchMe(patch);
@@ -132,6 +152,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       forgotPassword,
       resetPassword,
       completeSignIn,
+      signInWithApple,
+      signInWithGoogle,
       updateUser,
       setUser,
       signOut,
@@ -147,6 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       forgotPassword,
       resetPassword,
       completeSignIn,
+      signInWithApple,
+      signInWithGoogle,
       updateUser,
       setUser,
       signOut,

@@ -333,7 +333,11 @@ export const en: Record<TranslationKey, string> = {
   'muse.byMuse': 'Explained by Muse Spark (artificial intelligence) from the data for this night. It can make mistakes.',
   'muse.byTemplate': 'Automatic explanation from the data for this night.',
   'muse.translatedNote': 'Translated by artificial intelligence; it can make mistakes.',
-  'muse.spanishFallback': 'For now this explanation is in Spanish.',
+  'muse.spanishFallback': 'The translation is not available right now; it is shown in Spanish.',
   'tech.title': 'Technical information',
   'tech.subtitle': 'Model and weather details. Tap to open.',
+  'muse.listenIn': 'Read and listen in',
+  'muse.thinkingSlow': 'It can take up to a minute.',
+  'speech.nativeVoiceNote': 'The phone has no Aymara or Quechua voice: it reads the text with a Spanish voice.',
+  'social.failed': 'Sign in failed. Try again or use your email.',
 };

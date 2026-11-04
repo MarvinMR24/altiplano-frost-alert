@@ -418,3 +418,70 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
 - Pending: the alert explainer (`explain.py`) still sends the place name and night date to
   Muse, unlike spec 02; ay and qu UI labels for the new screens fall back to Spanish.
 - To use it: rebuild the backend container (`docker compose up -d --build backend`).
+
+## Muse reply fix and Aymara/Quechua listening (2026-11-04, uncommitted)
+
+- Bug: `GET /map/{point_id}/explain` returned 500 because Muse Spark spent the whole
+  `max_tokens` (default 700) on reasoning and replied with empty content. The default is now
+  8000 (`MUSE_MAX_TOKENS`, also used by alert explanations, which were silently falling back
+  to the template), the HTTP timeout 120 s (`MUSE_TIMEOUT_S`). Empty or cut replies fall
+  back to the template, are not stored, and are logged with `finish_reason` and reasoning
+  tokens. This exceeds the spec 02 target of 400 tokens, which a reasoning model cannot meet.
+  The app waits up to 150 s for this call. 100 backend tests pass.
+- App: "Read and listen in" chips (Spanish, English, Aymara, Quechua) on the Muse card:
+  picking a language generates the text in it, shows it, then reads it aloud. Phones have
+  no Aymara or Quechua voice, so those texts are read with the Spanish voice (apostrophes
+  removed) and the app says so.
+
+## One explanation, translated (2026-11-04, uncommitted)
+
+- Place explanations are generated once per place and night in Spanish (prompt
+  `place-explain-v2` key) and translated by Muse for en, ay and qu (`place_translate_v1.txt`).
+  Translations keep the `{place}`/`{night}` placeholders, the item counts and only numbers
+  from the facts; a failed translation is stored so it is not re-sent, and the Spanish text
+  is shown. API field `translated`. 102 backend tests pass.
+
+## New logo (2026-11-04, uncommitted)
+
+- Logo replaced by design D from the builder (map pin with peak, snowflake and red dot on
+  beige): `src/ui/logo.tsx`, `assets/logo.svg`, `logo-horizontal.svg`, `logo-mono.svg`
+  (mask cut-outs), `scripts/check-logo.mjs` updated. Icons regenerated; app icon and Android
+  adaptive background are beige, the Android foreground is padded to the safe zone, splash
+  background is beige (`app.json`). New theme token `logoMountain`.
+
+## Sign in with Apple and Google (2026-11-04, uncommitted)
+
+- Backend: `app/auth/social.py`, `app/routers/social.py` (`/auth/providers`, `/auth/apple`,
+  `/auth/google/start`, `/auth/google/callback`, `/auth/ticket`); RS256 verification with
+  provider keys (new dependency `cryptography==50.0.2`); accounts matched by verified email.
+  14 new tests (signed test tokens, no network), 116 pass, ruff clean.
+- App: `expo-apple-authentication` (official button, iOS only, hidden on Android) and the
+  Google flow through the system browser with a one-time ticket (`src/auth/providers.ts`).
+  The Google button stays "coming soon" until the backend has the Google settings.
+- `.env.example`: Google and Apple settings; `MUSE_MAX_TOKENS` raised to 8000.
+- Builder: rebuild the backend image (new dependency); for Google create the OAuth client
+  and a public https backend URL (see `.env.example`).
+
+## Deploy and Android (2026-11-04, uncommitted)
+
+- Backend deploy files: `docker-compose.prod.yml` (port 8000 not published, restart
+  unless-stopped, uvicorn proxy headers so rate limits see client addresses, log rotation),
+  `caddy` service under the `prod` profile in `docker-compose.yml`, `deploy/Caddyfile`
+  (HTTPS, zstd/gzip, HSTS and other headers, 1 MB body limit, 150 s read timeout for Muse),
+  `.env.production.example`, `deploy/scripts/` (sync_artifacts, sync_env, server_bootstrap,
+  deploy, backup_db) and `docs/deploy_aws.md`.
+- `docker-compose.yml` now passes APP_ENV, MUSE_MAX_TOKENS, MUSE_TIMEOUT_S,
+  MUSE_MAX_CALLS_PER_RUN, EXPO_PUSH_URL, GOOGLE_*, APPLE_AUDIENCES and RATE_LIMIT_PER_MINUTE
+  (they were not reaching the container), with defaults equal to the backend defaults where
+  an empty value would override them (MUSE_MODEL, APPLE_AUDIENCES, EXPO_PUSH_URL).
+- Production guards already in place: no start without SESSION_SECRET, no console email.
+- Mobile: `app.config.ts` replaces `app.json` (package com.marvinmr24.frostwatch, version
+  1.0.0, versionCode from ANDROID_VERSION_CODE, Google Maps key from
+  GOOGLE_MAPS_ANDROID_API_KEY, splash through the expo-splash-screen plugin as SDK 58
+  requires, expo-location permission text, EAS project id), `eas.json` (preview APK,
+  production AAB), Google Maps provider on Android in `src/ui/maps.tsx`, Expo dependencies
+  aligned with `expo install --fix`. Guide: `docs/android_build.md`.
+- Checks: compose config (default and prod) valid, port 8000 absent in prod; backend tests
+  and ruff pass; tsc, unit tests, web and Android bundles; the Maps key appears in the
+  prebuild config only when the env var is set. Not verified: an actual EAS build, the EC2
+  deploy and certificates (need accounts).

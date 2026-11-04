@@ -12,6 +12,7 @@ export const colors = {
   teal: '#2F7E6E',
   ridge: '#3A5068',
   iceBlue: '#9FB4C7',
+  logoMountain: '#8FA9C2',
   plainLine: '#B49F76',
   plainEnd: '#D9CBAE',
   background: '#F4EDE1',

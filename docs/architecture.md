@@ -45,6 +45,7 @@ Rules:
 | Service | Started by | Purpose |
 |---|---|---|
 | backend | `docker compose up` | FastAPI on port 8000, SQLite in a named volume at `/app/var` |
+| caddy | prod profile only | HTTPS reverse proxy (Let's Encrypt) in front of backend:8000 on AWS; port 8000 is not published in production (`docker-compose.prod.yml`, `docs/deploy_aws.md`) |
 
 The ML pipeline is not in Compose either: it runs on the host with the root `.venv` (`make test`, `dvc repro`).
 The mobile app is not in Compose. It runs on the host: `cd mobile && npx expo start --web`

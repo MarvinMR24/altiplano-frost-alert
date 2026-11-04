@@ -82,25 +82,66 @@ def _client(replies, seen):
     return httpx.Client(transport=httpx.MockTransport(handler))
 
 
-def test_muse_answer_in_aymara_is_filled_cached_and_regenerated_when_data_changes(tmp_path, monkeypatch):
+def _base_reply():
+    return {"headline": "{place}: riesgo 62%", "what_happened": "La noche del {night} el riesgo fue alto.",
+            "what_next": "La noche siguiente fue 75%.", "actions": [{"id": "cover_crops", "text": "Cubra los cultivos."}],
+            "sources": [{"id": "senamhi", "why": "Pronóstico oficial."}]}
+
+
+def _translation(prefix):
+    return {"headline": "{place}: juyphi 62%", "what_happened": f"{prefix} {{night}} arumaxa.",
+            "what_next": "Qhipa arumaxa 75%.", "actions": ["Yapu imt'aña."], "sources": ["Pronóstico uñjañataki."]}
+
+
+def test_one_base_explanation_then_translations_per_language(tmp_path, monkeypatch):
     s = _settings(tmp_path, monkeypatch)
-    reply = {"headline": "{place}: juyphi 62%", "what_happened": "{night} arumaxa juyphi utjaspawa.",
-             "what_next": "Qhipa arumaxa 75%.", "actions": [{"id": "cover_crops", "text": "Yapu imt'aña."}],
-             "sources": [{"id": "senamhi", "why": "Pronóstico uñjañataki."}]}
+    replies = [json.dumps(_base_reply()), json.dumps(_translation("Ay")), json.dumps(_translation("Qu"))]
     seen = []
-    ex = PlaceExplainer(s, http=_client([json.dumps(reply), json.dumps(reply)], seen))
+    ex = PlaceExplainer(s, http=_client(replies, seen))
     db = _session(tmp_path)
-    first = ex.explain_place(db, rec(), None, rec(16, 0.75, "very_high"), "producer", "ay")
-    assert first.source == "muse" and first.language == "ay" and not first.cached
-    assert first.payload["headline"] == "Oruro: juyphi 62%"
-    assert first.payload["what_happened"].startswith("15 de julio de 2018")
-    assert first.payload["sources"][0]["url"] == "https://senamhi.gob.bo"
-    assert "Oruro" not in json.dumps(seen[0]["messages"], ensure_ascii=False)
+    nxt = rec(16, 0.75, "very_high")
+    ay = ex.explain_place(db, rec(), None, nxt, "producer", "ay")
+    # First request in Aymara: one generation (Spanish base) plus one translation.
+    assert len(seen) == 2 and ay.source == "muse" and ay.language == "ay" and ay.translated
+    assert ay.payload["headline"] == "Oruro: juyphi 62%"
+    assert ay.payload["what_happened"].endswith("15 de julio de 2018 arumaxa.")
+    assert ay.payload["sources"][0]["url"] == "https://senamhi.gob.bo"
+    sent = json.dumps([m["messages"] for m in seen], ensure_ascii=False)
+    assert "Oruro" not in sent and "2018" not in sent
+    assert '"language": "ay"' in seen[1]["messages"][1]["content"] and "{place}" in seen[1]["messages"][1]["content"]
+    # Spanish reuses the base, Aymara is stored, Quechua costs only one translation.
+    es = ex.explain_place(db, rec(), None, nxt, "producer", "es")
+    assert es.language == "es" and not es.translated and es.payload["headline"] == "Oruro: riesgo 62%"
+    assert ex.explain_place(db, rec(), None, nxt, "producer", "ay").cached and len(seen) == 2
+    qu = ex.explain_place(db, rec(), None, nxt, "producer", "qu")
+    assert qu.language == "qu" and len(seen) == 3
+    # New data for the same night means a new base explanation.
+    ex.explain_place(db, rec(p=0.66), None, nxt, "producer", "es")
+    assert len(seen) == 4
+
+
+def test_bad_translation_returns_spanish_and_is_not_requested_again(tmp_path, monkeypatch):
+    s = _settings(tmp_path, monkeypatch)
+    bad = {**_translation("Ay"), "what_next": "Qhipa arumaxa -9 grados."}
+    seen = []
+    ex = PlaceExplainer(s, http=_client([json.dumps(_base_reply()), json.dumps(bad)], seen))
+    db = _session(tmp_path)
+    out = ex.explain_place(db, rec(), None, rec(16, 0.75, "very_high"), "producer", "ay")
+    assert out.language == "es" and not out.translated and out.source == "muse"
     again = ex.explain_place(db, rec(), None, rec(16, 0.75, "very_high"), "producer", "ay")
-    assert again.cached and len(seen) == 1
-    # New data for the same night (reprocessed) means new facts and a new Muse call.
-    ex.explain_place(db, rec(p=0.66), None, rec(16, 0.75, "very_high"), "producer", "ay")
-    assert len(seen) == 2
+    assert again.language == "es" and len(seen) == 2
+
+
+def test_template_base_gives_english_template_and_spanish_for_ay(tmp_path, monkeypatch):
+    s = _settings(tmp_path, monkeypatch)
+    monkeypatch.setenv("MUSE_MOCK", "1")
+    s = load_settings()
+    ex = PlaceExplainer(s)
+    db = _session(tmp_path)
+    en = ex.explain_place(db, rec(), None, None, "producer", "en")
+    assert en.language == "en" and en.payload["headline"].startswith("Frost:")
+    ay = ex.explain_place(db, rec(), None, None, "producer", "ay")
+    assert ay.language == "es" and ay.source == "template"
 
 
 def test_api_error_falls_back_and_is_not_cached(tmp_path, monkeypatch):
@@ -137,3 +178,28 @@ def test_endpoint_requires_auth_and_returns_a_plain_explanation(client, app):
     assert body["headline"] and body["what_happened"] and body["what_next"] and body["actions"]
     assert all(s["url"].startswith("https://") for s in body["sources"])
     assert client.get(f"/map/nowhere/explain?night={night}", headers=headers).status_code == 404
+
+
+def _raw_client(bodies, seen):
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=bodies.pop(0))
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_empty_reply_from_reasoning_falls_back_without_crashing_and_retries(tmp_path, monkeypatch):
+    s = _settings(tmp_path, monkeypatch)
+    cut = {"choices": [{"message": {"content": None}, "finish_reason": "length"}],
+           "usage": {"completion_tokens": 700, "completion_tokens_details": {"reasoning_tokens": 700}}}
+    good = template(facts())
+    parts = {"choices": [{"message": {"content": [{"type": "text", "text": json.dumps(good)}]}, "finish_reason": "stop"}]}
+    seen = []
+    ex = PlaceExplainer(s, http=_raw_client([cut, parts], seen))
+    db = _session(tmp_path)
+    first = ex.explain_place(db, rec(), rec(14, 0.4, "moderate"), rec(16, 0.75, "very_high"), "producer", "es")
+    assert first.source == "template" and not first.cached and first.payload["headline"]
+    assert seen[0]["max_tokens"] == s.muse_max_tokens >= 8000
+    second = ex.explain_place(db, rec(), rec(14, 0.4, "moderate"), rec(16, 0.75, "very_high"), "producer", "es")
+    assert second.source == "muse" and len(seen) == 2  # truncated reply was not stored
+    log = [json.loads(x) for x in s.muse_usage_log.read_text().splitlines()]
+    assert log[0]["status"] == "place_truncated" and log[0]["reasoning_tokens"] == 700

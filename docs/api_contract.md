@@ -160,6 +160,26 @@ Passwords, hashes and codes are never logged and never appear in responses.
 - `POST /auth/password/change` needs the Bearer token and returns 401 when the current password
   is wrong.
 
+### Auth (Apple and Google)
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | /auth/providers | | `{google: bool, apple: bool}` |
+| POST | /auth/apple | `{identity_token, name?, language?}` | `{session_token, user}` |
+| GET | /auth/google/start?redirect=<deep link>&lang= | | 302 to Google |
+| GET | /auth/google/callback?state&code | | 302 to the deep link with `ticket` (or `error=cancelled|failed`) |
+| POST | /auth/ticket | `{ticket}` | `{session_token, user}` |
+
+- Apple: the identity token is verified with Apple's public keys (issuer
+  `https://appleid.apple.com`, audience in `APPLE_AUDIENCES`, not expired, verified email).
+  401 otherwise.
+- Google is enabled only with `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `PUBLIC_BASE_URL`
+  (503 on start otherwise). The deep link must start with `exp://`, `exps://` or
+  `frostwatch://`. The state is signed and expires in 10 minutes; the ticket is signed,
+  expires in 2 minutes and works once.
+- Accounts are matched by email; a provider sign in marks the email verified and keeps an
+  existing password. No provider ids are stored.
+
 ### Me and devices
 
 | Method | Path | Body | Response |
@@ -190,13 +210,17 @@ the place name, the date, coordinates or the observed outcome; every number is c
 against the facts and sources come from a fixed list (no free URLs).
 
 ```json
-{"point_id": "oruro", "night_date": "2024-08-17", "language": "ay", "source": "muse",
+{"point_id": "oruro", "night_date": "2024-08-17", "language": "ay", "source": "muse", "translated": true,
  "headline": "...", "what_happened": "...", "what_next": "...", "actions": ["..."],
  "sources": [{"name": "SENAMHI Bolivia", "url": "https://senamhi.gob.bo", "why": "..."}]}
 ```
 
-`language` is the language of the text: for ay and qu it falls back to `es` when the
-template is used. 404 for an unknown point or night.
+One base explanation is generated per place and night in Spanish; en, ay and qu are Muse
+translations of that same text (`translated: true`), stored per language, so a new language
+costs one short translation call and every language says the same. `language` is the
+language of the text: when a translation is not available (template base, Muse error or a
+translation that fails the checks) the Spanish text is returned with `language: "es"`; with a
+template base, `en` gets the English template. 404 for an unknown point or night.
 
 ### Areas of interest
 

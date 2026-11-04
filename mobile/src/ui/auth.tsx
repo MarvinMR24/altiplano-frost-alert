@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -14,8 +15,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import * as AppleAuthentication from 'expo-apple-authentication';
+
+import { api } from '@/api/client';
+import { useAuth } from '@/auth/AuthProvider';
+import { appleSignInAvailable } from '@/auth/providers';
 import { LANGUAGES, useI18n } from '@/i18n';
-import { socialComingSoon } from '@/auth/providers';
 import { Field, styles as ui } from '@/ui/components';
 import { haptic } from '@/ui/feedback';
 import { Icon } from '@/ui/icons';
@@ -268,39 +273,80 @@ export function useCountdown(seconds: number, activeKey: unknown): { left: numbe
   return { left, restart: () => setLeft(seconds) };
 }
 
+// Google and Apple sign in. Apple uses the official button and appears only where the
+// system offers it (iPhone). Google is live when the backend has it configured; otherwise
+// the button explains it is coming soon.
 export function SocialButtons() {
   const { t } = useI18n();
-  const [notice, setNotice] = useState(false);
+  const { signInWithApple, signInWithGoogle } = useAuth();
+  const [google, setGoogle] = useState(false);
+  const [apple, setApple] = useState(false);
+  const [busy, setBusy] = useState<'google' | 'apple' | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    Promise.all([api.getAuthProviders().catch(() => ({ google: false, apple: false })), appleSignInAvailable()]).then(
+      ([providers, appleHere]) => {
+        if (!alive) return;
+        setGoogle(providers.google);
+        setApple(providers.apple && appleHere);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(() => setNotice(false), 3000);
+    const timer = setTimeout(() => setNotice(null), 4000);
     return () => clearTimeout(timer);
   }, [notice]);
-  function comingSoon() {
-    socialComingSoon();
-    setNotice(true);
+
+  async function run(provider: 'google' | 'apple') {
+    haptic.tap();
+    setNotice(null);
+    setBusy(provider);
+    try {
+      // On success the auth guard swaps this screen for onboarding or the tabs.
+      await (provider === 'google' ? signInWithGoogle() : signInWithApple());
+    } catch {
+      setNotice(t('social.failed'));
+    } finally {
+      setBusy(null);
+    }
   }
+
   return (
     <View style={{ gap: spacing.sm }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={t('welcome.google')}
-        onPress={comingSoon}
+        accessibilityState={{ busy: busy === 'google' }}
+        disabled={busy !== null}
+        onPress={() => (google ? run('google') : setNotice(t('welcome.comingSoon')))}
         style={({ pressed }) => [authStyles.social, authStyles.socialGoogle, pressed && { opacity: 0.8 }]}
       >
-        <Ionicons name="logo-google" size={20} color={colors.text} />
-        <Text style={authStyles.socialGoogleText}>{t('welcome.google')}</Text>
+        {busy === 'google' ? (
+          <ActivityIndicator color={colors.text} />
+        ) : (
+          <>
+            <Ionicons name="logo-google" size={20} color={colors.text} />
+            <Text style={authStyles.socialGoogleText}>{t('welcome.google')}</Text>
+          </>
+        )}
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('welcome.apple')}
-        onPress={comingSoon}
-        style={({ pressed }) => [authStyles.social, authStyles.socialApple, pressed && { opacity: 0.8 }]}
-      >
-        <Ionicons name="logo-apple" size={20} color={colors.white} />
-        <Text style={authStyles.socialAppleText}>{t('welcome.apple')}</Text>
-      </Pressable>
-      {notice ? <Text style={[ui.small, { textAlign: 'center' }]}>{t('welcome.comingSoon')}</Text> : null}
+      {apple ? (
+        <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          cornerRadius={14}
+          style={[authStyles.appleButton, busy !== null && { opacity: 0.5 }]}
+          onPress={() => (busy === null ? run('apple') : undefined)}
+        />
+      ) : null}
+      {notice ? <Text style={[ui.small, { textAlign: 'center' }]}>{notice}</Text> : null}
     </View>
   );
 }
@@ -414,8 +460,7 @@ const authStyles = StyleSheet.create({
   },
   socialGoogle: { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
   socialGoogleText: { color: colors.text, fontWeight: '600', fontSize: 16 },
-  socialApple: { backgroundColor: colors.black },
-  socialAppleText: { color: colors.white, fontWeight: '600', fontSize: 16 },
+  appleButton: { width: '100%', height: 52 },
   orRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   langRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },

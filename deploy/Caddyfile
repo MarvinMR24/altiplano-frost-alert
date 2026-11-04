@@ -1,0 +1,36 @@
+# FrostWatch production reverse proxy. Caddy gets and renews the Let's Encrypt certificate
+# for {$DOMAIN} automatically (ports 80 and 443 must be open). Only Caddy is public; the
+# backend is reachable at backend:8000 on the internal Compose network.
+{
+	# Uncomment to test against the Let's Encrypt staging CA (no rate limits):
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# The API only receives small JSON bodies (largest: a zone polygon).
+	request_body {
+		max_size 1MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	reverse_proxy backend:8000 {
+		# Muse explanations can take close to a minute.
+		transport http {
+			read_timeout 150s
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

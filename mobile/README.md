@@ -56,7 +56,7 @@ on the same Wi-Fi can reach it directly.
 
 Push in Expo Go needs an EAS project id. Two options (run one yourself, they write the
 same value):
-- `npx eas-cli init` in `mobile/` (writes the id into `app.json`), or
+- `npx eas-cli init` in `mobile/` and put the id in `EAS_PROJECT_ID` (`app.config.ts` reads it), or
 - set `EXPO_PUBLIC_EAS_PROJECT_ID` in `mobile/.env.local`.
 
 ## Configuration
@@ -67,7 +67,7 @@ Create `mobile/.env.local` (gitignored) from `mobile/.env.example`:
 |---|---|
 | `EXPO_PUBLIC_USE_MOCK` | `1` (default): offline mock data with a permanent "MOCK DATA" banner. `0`: real backend. |
 | `EXPO_PUBLIC_API_URL` | Backend base URL: `http://localhost:8000` for web testing, `http://<Mac IP>:8000` for the iPhone on the same Wi-Fi. Empty forces mock mode. |
-| `EXPO_PUBLIC_EAS_PROJECT_ID` | Optional EAS project id for Expo push tokens (or run `npx eas-cli init` once, which writes it into app.json). |
+| `EXPO_PUBLIC_EAS_PROJECT_ID` | Optional EAS project id for Expo push tokens (or set `EAS_PROJECT_ID` after `npx eas-cli init`; `app.config.ts` reads it). |
 
 `EXPO_PUBLIC_*` values are bundled into the app: never put secrets there. Restart
 `npx expo start` after changing them.
@@ -99,14 +99,16 @@ read flags in memory, so the whole flow works offline: any email, any valid pass
   and an icon (`levelIcons` in the theme).
 - Icons are custom (`src/ui/icons/`, `<Icon name="..." />`); Ionicons stays only for the
   Google and Apple brand glyphs.
-- The logo is an original Altiplano night mark (`assets/logo.svg`,
-  `assets/logo-horizontal.svg`, `assets/logo-mono.svg`), rendered with
-  `react-native-svg` as `Logo` in `src/ui/logo.tsx` (welcome, sign up, sign in, Profile).
+- The logo is a map pin (your place) holding a snowy Altiplano peak, a frost snowflake and
+  a red alert dot, on a beige rounded square (`assets/logo.svg`,
+  `assets/logo-horizontal.svg`, `assets/logo-mono.svg` with cut-outs for one-color system
+  icons). It is rendered with `react-native-svg` as `Logo` in `src/ui/logo.tsx`;
+  `node scripts/check-logo.mjs` checks that the SVG files use the same paths.
 - PNG assets are generated from the SVGs with a dev-only script
   (`@resvg/resvg-js` devDependency, not bundled into the app):
 
 ```
-node scripts/build-icons.mjs   # writes icon.png, splash-icon.png, favicon.png and Android icons
+node scripts/build-icons.mjs   # writes icon.png, splash-icon.png, favicon.png and Android adaptive icons (pin padded to the safe zone)
 ```
 
 ## Auth flow
@@ -114,8 +116,19 @@ node scripts/build-icons.mjs   # writes icon.png, splash-icon.png, favicon.png a
 Welcome (first screen) with language chips, 4-step sign up (about you, account with
 password rules and strength meter, email code, profile), sign in with password or with a
 code, forgot password (email, code, new password), change password in Profile. Password
-policy: 8+ characters, one letter, one number. Google and Apple buttons are visual only
-("coming soon"); see `src/auth/providers.ts`.
+policy: 8+ characters, one letter, one number. Sign in with Apple (iPhone only, official
+button, verified by the backend) and with Google (system browser and a one-time ticket;
+active only when the backend has the Google settings, otherwise "coming soon"); see
+`src/auth/providers.ts` and `docs/api_contract.md`.
+
+## Android APK and app config
+
+`app.config.ts` replaces `app.json` (same fields) so values come from the environment: the
+Google Maps key (`GOOGLE_MAPS_ANDROID_API_KEY`, an EAS secret, never in the repo), the
+Android `versionCode` (`ANDROID_VERSION_CODE`) and the EAS project id (`EAS_PROJECT_ID`).
+Android builds use Google Maps (`PROVIDER_GOOGLE` in `src/ui/maps.tsx`), iOS keeps Apple
+Maps, the web keeps Leaflet. Build profiles live in `eas.json`; the APK talks only to the
+https backend. Full guide: `docs/android_build.md`.
 
 ## Map layers, place search and privacy
 
