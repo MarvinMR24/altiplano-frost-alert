@@ -5,6 +5,8 @@ import { api, type Aoi } from '@/api/client';
 import { useAsync } from '@/hooks/useAsync';
 import { useI18n } from '@/i18n';
 import { Button, EmptyView, ErrorView, errorText, LevelBadge, LoadingView, styles as ui } from '@/ui/components';
+import { Icon } from '@/ui/icons';
+import { FadeIn, stagger } from '@/ui/motion';
 import { colors, spacing } from '@/ui/theme';
 
 export default function ZonesScreen() {
@@ -41,7 +43,11 @@ export default function ZonesScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
         refreshing={aois.loading}
         onRefresh={aois.reload}
-        renderItem={({ item }) => <ZoneRow aoi={item} onDelete={() => confirmDelete(item)} />}
+        renderItem={({ item, index }) => (
+          <FadeIn delay={stagger(index)}>
+            <ZoneRow aoi={item} onDelete={() => confirmDelete(item)} />
+          </FadeIn>
+        )}
       />
     );
 
@@ -49,7 +55,7 @@ export default function ZonesScreen() {
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>{content}</View>
       <View style={styles.footer}>
-        <Button label={t('zones.add')} onPress={() => router.push('/zones/draw')} />
+        <Button label={t('zones.add')} icon="plus" size="large" onPress={() => router.push('/zones/draw')} />
       </View>
     </View>
   );
@@ -61,7 +67,7 @@ function ZoneRow({ aoi, onDelete }: { aoi: Aoi; onDelete: () => void }) {
   return (
     <View style={styles.row}>
       <View style={{ flex: 1, gap: spacing.xs }}>
-        <Text style={ui.bodyStrong}>{aoi.name}</Text>
+        <Text style={[ui.bodyStrong, { fontSize: 18 }]}>{aoi.name}</Text>
         {aoi.current ? (
           <>
             <LevelBadge level={aoi.current.level} probability={aoi.current.probability} />
@@ -78,10 +84,22 @@ function ZoneRow({ aoi, onDelete }: { aoi: Aoi; onDelete: () => void }) {
         </Text>
       </View>
       <View style={styles.actions}>
-        <Pressable accessibilityRole="button" onPress={() => router.push(`/zones/${aoi.id}`)} hitSlop={8}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/zones/${aoi.id}`)}
+          hitSlop={8}
+          style={({ pressed }) => [styles.actionButton, pressed && { opacity: 0.7 }]}
+        >
+          <Icon name="edit" size={18} color={colors.primary} />
           <Text style={styles.link}>{t('common.edit')}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" onPress={onDelete} hitSlop={8}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onDelete}
+          hitSlop={8}
+          style={({ pressed }) => [styles.actionButton, pressed && { opacity: 0.7 }]}
+        >
+          <Icon name="trash" size={18} color={colors.danger} />
           <Text style={[styles.link, { color: colors.danger }]}>{t('common.delete')}</Text>
         </Pressable>
       </View>
@@ -100,7 +118,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   actions: { justifyContent: 'space-between', alignItems: 'flex-end' },
-  link: { color: colors.primary, fontWeight: '600' },
+  actionButton: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  link: { color: colors.primary, fontWeight: '700', fontSize: 16 },
   footer: {
     padding: spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,

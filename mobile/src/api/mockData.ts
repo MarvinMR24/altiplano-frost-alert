@@ -3,7 +3,7 @@
 
 import { circlePolygon } from '@/geo';
 import { levelFromProbability } from '@/ui/theme';
-import type { Cell, CoverageResponse, Driver, Language, ModelCard, Observed } from './types';
+import type { Cell, CoverageResponse, Driver, ModelCard, Observed } from './types';
 
 export const MOCK_DATA_SOURCE = 'MOCK DATA (shaped like ERA5-Land reanalysis, Copernicus CDS)';
 export const MOCK_MODEL_VERSION = 'mock-0';
@@ -126,7 +126,7 @@ export const MOCK_MODEL_CARD: ModelCard = {
 };
 
 export const MOCK_EXPLANATION_TEXT: Record<
-  Language,
+  'es' | 'en',
   { headline: (name: string) => string; why: string; actions: string[]; caveats: string[]; summary: string }
 > = {
   es: {

@@ -62,6 +62,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     for module in (auth, me, geo, map, aois, alerts, model):
         app.include_router(module.router)
+    app.include_router(auth.password_router)
     logging.getLogger("frostwatch").info("backend ready provider=%s email=%s muse_mock=%s",
                                          settings.data_provider, settings.email_provider, settings.muse_mock)
     return app

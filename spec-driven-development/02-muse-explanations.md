@@ -68,3 +68,17 @@ every number can be verified.
 ## Out of scope
 
 The Muse dataset correction experiment (A vs B) belongs to the ml session.
+
+## Addendum (2026-11-04): place explanations on demand
+
+Builder decision: when a user opens a place on the map, Muse writes a plain explanation of
+that night (what happened, what came next, what to do, where to read more) in es, en, ay or
+qu, generated on demand from the current processed data (`GET /map/{point_id}/explain`,
+`backend/app/services/place_explain.py`, prompt `place-explain-v1`). It follows the rules
+above: allow-listed facts only, no place name, date, coordinates or labels sent (Muse writes
+`{place}` and `{night}` placeholders), number verification, catalog actions, a fixed list of
+information sources, template fallback, usage logged. Unlike alerts it also runs below the
+watch level, because the user asked for it; cost is bounded by caching identical facts and
+30 calls per user per hour. "What came next" uses only the model output for the following
+processed night; Muse never forecasts on its own. The app shows the explanation first and
+moves model numbers and metrics into a closed "Technical information" section.

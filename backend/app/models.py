@@ -1,5 +1,6 @@
-"""Database tables. Only the data the app needs: email, name, language, profile, crops,
-livestock, push tokens and AOI polygons. DELETE /me removes every row tied to a user."""
+"""Database tables. Only the data the app needs: email, name, optional phone, password hash,
+language, profile, crops, livestock, push tokens and AOI polygons. DELETE /me removes every
+row tied to a user."""
 
 from __future__ import annotations
 
@@ -25,6 +26,9 @@ class User(Base):
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     language: Mapped[str] = mapped_column(String(2), default="es")
     profile: Mapped[str] = mapped_column(String(16), default="producer")
     crops: Mapped[list] = mapped_column(JSON, default=list)

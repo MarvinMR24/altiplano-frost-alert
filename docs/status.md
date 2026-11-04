@@ -257,3 +257,194 @@ Pending for the builder: one cache re-run (must show 0 API calls), then `dvc com
   card loads, `list_nights` takes 7 ms for 3,221 files and one night loads in a few ms. No cap needed.
 - Replay: `reports/replay_candidates.md`; recommended night 2024-08-17.
 - Pending for the builder: mirror the final run to MLflow if wanted, and the end to end alert.
+
+## Mobile polish (2026-11-04, uncommitted)
+
+Done in `mobile/` plus `mobile/README.md`, spec 03 and this file. No backend or contract edits.
+- Map: Apple Maps `mutedStandard` on iPhone (no POIs, no rotation or pitch); Leaflet with
+  a real CARTO Voyager base map on web. Initial region fits all 8 cells plus 30 km circles.
+  Level markers pair color, text and icon; tapping a cell animates the camera and opens the
+  sheet; closing animates back. Native markers use `tracksViewChanges={false}`; heavy map
+  children are memoized and tabs are lazy.
+- Zone drawing: tap to add (3 to 12), drag vertices (long press and drag on iPhone),
+  midpoint handles to insert, tap to select plus Delete vertex, Undo and Clear. Live
+  coverage validation with a red outline and disabled Finish. `zones/[id]` shows a small
+  read-only map; only name, threshold and channels are editable (PATCH has no polygon).
+- Visual identity: navy and beige tokens in `src/ui/theme.ts`, no hex literals in screens;
+  level badges pair color, text and icon; navy tab bar and headers; cards with soft radius
+  and shadow; 44 pt touch targets. Original SVG logo (`assets/logo.svg`, `logo-mark.svg`),
+  `LogoMark` via `react-native-svg` on login, onboarding and Profile; PNGs built with
+  `node scripts/build-icons.mjs`; `app.json` splash navy, name FrostWatch.
+- Alert detail: level and probability first, then headline, why, actions, caveats,
+  conditions, drivers, outcome, and a collapsed How this was computed. Replay tag from
+  optional `mode`; explanation label from optional `explanation_source` (mock provides one
+  muse and one template alert). The backend detail sends `mode` but the list does not, and
+  `explanation_source` is not exposed yet, so real alerts fall back to the template label.
+- Checks: `npx tsc --noEmit` passes; `npx expo export --platform web` bundles.
+- i18n: new draw hints (tap, drag, long press on iPhone) and history keys exist in es and en.
+- Not verified: no headless browser here, so the web flow (login, map with base map and
+  8 cells, tap cell, draw, drag, insert and delete vertex, save, History, alert detail)
+  was not run and no screenshots were taken; the production bundle speed question is open.
+- iPhone LAN steps are in `mobile/README.md` (docker compose publishes 8000 on all
+  interfaces; `ipconfig getifaddr en0`; `mobile/.env.local`; QR scan; Safari health check;
+  `CORS_ORIGINS` with the phone port for web; EAS project id options).
+- Pending for the builder: run the iPhone LAN test, try the web production bundle, and
+  decide whether the backend should expose `explanation_source` and list `mode`.
+
+## App v2 (2026-11-04, uncommitted)
+
+Password auth, custom icons, detailed logo, Aymara and Quechua, searchable pickers,
+threshold explanation and calendar night picker.
+
+Backend (88 tests pass, ruff clean; was 72):
+- `users` gains `password_hash` (scrypt, stdlib only), `phone` and `email_verified`;
+  idempotent `ALTER TABLE` migration at startup marks pre-existing rows verified.
+- New endpoints: `POST /auth/register` (202, no email leak), verify with purpose
+  `register`, `POST /auth/login` (generic 401, 403 `email_not_verified` with a new code,
+  5 fails per 15 min then 429), `POST /auth/password/forgot` (always 202),
+  `POST /auth/password/reset` (session), `POST /auth/password/change` (Bearer). Code login
+  unchanged and now marks the email verified. Secrets never logged (tested).
+- Language is `es | en | ay | qu`; emails, push and explanations fall back to Spanish
+  for ay/qu (tested). `DELETE /me` still removes everything.
+- New suite `backend/tests/test_password_auth.py` (16 tests).
+
+Mobile (`npx tsc --noEmit` passes, `npx expo export --platform web` bundles,
+`node scripts/check-i18n.mjs` passes with 264 keys, `node scripts/unit-tests.mjs`
+passes with 41 assertions):
+- Custom SVG icon set (`src/ui/icons/`, 50+ names, `<Icon name="..." />`); Ionicons only
+  for the Google/Apple brand glyphs. New `Field` (left icon, focus/error states),
+  large buttons, six-box `CodeInput`, password meter, social buttons (visual only).
+- Auth flow: welcome (logo, tagline, 4 language chips, social), 4-step sign up with
+  slide transitions, sign in with password or code, forgot password, change password.
+  Mock mode supports every new endpoint offline.
+- Aymara (95 keys) and Quechua (99 keys) dictionaries; the rest falls back to Spanish,
+  listed in `docs/i18n_review.md` for a native speaker.
+- Catalogs: 42 crops in 6 categories, 14 livestock, one searchable `CatalogPicker`
+  (chips, grouped results, modal on phones, inline on wide screens). Old tag ids kept.
+- Threshold is now "Alert me from" with an info sheet (0-100 bar, level colors at
+  30/50/70); same component in sign up, Profile and zone screens.
+- Map night selector is a calendar sheet (`src/date/calendar.ts`, Monday first, year and
+  month jump, only available nights enabled, latest marked); markers flash on change.
+- Profile rebuilt as icon cards: language, profile type, crops, livestock, alerts,
+  account (change email, change password, sign out), danger zone with confirm sheet.
+- Logo redesigned (night sky, moon, three ranges, snowcaps, plain, snowflakes, red dot):
+  `assets/logo.svg`, `logo-horizontal.svg`, `logo-mono.svg`, `src/ui/logo.tsx` in sync;
+  PNGs regenerated. Old `assets/logo-mark.svg` is stale and can be deleted.
+
+Docs: contract (password endpoints, new fields), spec 03 (v2), `mobile/README.md`,
+`docs/i18n_review.md` (new), MUSE.md/CLAUDE.md 3.5 store list (builder decision).
+
+Not verified: no web run or screenshots (builder tests in the app directly). Manual
+checks pending: full sign up, password login, code login, forgot password, ay/qu UI,
+picker searches, threshold sheet, calendar jump, push on the iPhone.
+
+## App v2 fixes and field UX (2026-11-04, uncommitted, Claude Code)
+
+Fixes from `reviews/muse_app_v2_review.md`:
+- H1: "Go to map" no longer stays loading after onboarding (`onboarding.tsx` resets `busy`).
+- H2 and M1: `POST /auth/email/request` with purpose `register` resends the sign up code
+  (only for an unverified account, always 204). Sign up resend uses it; a 403 on password
+  login opens the verify step with purpose `register`.
+- M2: login always runs scrypt (dummy hash for unknown emails). L1: register returns 202
+  when the code limit is hit. L2: "missing bearer token" strings restored. L3: log test
+  checks the real phone. 4 new backend tests (92 pass, ruff clean).
+- M3: logo SVGs and `logo.tsx` share the same paths (clearer snowflake, real crescent
+  moon); `node scripts/check-logo.mjs` checks the sync; PNGs regenerated.
+- M4: web map uses keyless OpenStreetMap tiles. M5: signed out visitors land on Welcome
+  (`Stack.Protected redirectTo`). M6, L4: password rules always visible, error names the
+  first failing rule. M7: new cow, horse, llama and solar tent icons. L5: mock hint fixed.
+  L8: one step indicator; resident sees "Alerts". L9: `@types/leaflet` is a dev dependency.
+  Color literals moved to the `colors.backdrop` token. The 6-digit code now auto submits
+  with the full code.
+
+Field UX (people in rural communities; Android and iOS through Expo Go):
+- Bigger text and touch targets (buttons 52 to 58 px, body 16 px), icons next to labels.
+- "Listen" button (`expo-speech`) reads the alert or the place risk aloud; Aymara and
+  Quechua are read with the Spanish voice and the app says so.
+- Haptics (`expo-haptics`) on taps, selections, success and errors; Android ripple.
+- Risk meter: icon, level word, percent and a 4-step scale that fills up to the level.
+- Map: summary card with the night's highest risk (tap opens it); high and very high
+  markers pulse. Alert detail leads with numbered actions.
+- Motion kit `src/ui/motion.tsx` (fade in, stagger, pop, pulse, shake, breathing logo),
+  all disabled when the system "reduce motion" setting is on.
+
+Verified: tsc, i18n parity, 41 unit assertions, logo check, backend suite; Playwright on
+the web build against a local backend: Welcome first, sign up with resend, onboarding to
+map, map summary and risk sheet, sign out to Welcome, unverified login to verify (10 of
+10). Not verified: Android and iOS devices (builder tests).
+
+## Satellite maps, place search, compact night pill (2026-11-04, uncommitted)
+
+- Maps default to satellite with place names (hybrid) on the Map tab, zone drawing and zone
+  detail; round layers button toggles the street map, remembered per device. Web uses Esri
+  World Imagery plus labels, or OpenStreetMap. Coverage circles, zones and the drawing
+  line have a light halo; markers and vertex handles have a white border and shadow.
+- Search bar on the Map tab and the draw screen (`src/geo/search.ts`): coverage cells
+  first, then Photon with Nominatim fallback, debounce, 1 request per second, cache,
+  cancellation. Outside results are dimmed (Map tab: camera moves plus a toast; draw
+  screen: not selectable). Selected place shows a temporary pin (0.05 degree view on the
+  map, 0.01 on the draw screen). "My location" with `expo-location` after an explanation;
+  hidden for the session if denied. Privacy line added to Profile.
+- Each coverage circle shows its place name (label at the top edge of the circle) on the
+  Map tab and the draw screen (`CoverageLabels` in `src/ui/mapShapes.tsx`).
+- The big night card was replaced by a navy pill (short date) and a "Reanalysis" chip.
+- The HTTP client now times out after 12 s, so an unreachable backend shows an error with
+  Retry instead of an endless loading screen.
+- Checks: tsc, i18n parity, 59 unit assertions (18 new for search), logo check, web,
+  Android and iOS bundles export. Not run on devices (builder tests).
+
+## Zone drawing modes (2026-11-04, uncommitted)
+
+- Three big mode buttons under the map: Add (tap the map adds a point, white midpoints
+  insert one between two), Move (pencil: tap a point, then tap where it goes, or drag it)
+  and Delete point (trash: tap a point to remove it). Undo, Clear all and Finish stay.
+- Kept from the previous pass: coverage circles and labels memoized, drag updates once per
+  frame, `moveOnMarkerPress={false}` on Android, haptics. Removed: tap to zoom when zoomed
+  out and tap-to-move without a mode (the builder found them confusing).
+
+## Muse place explanations and simpler screens (2026-11-04, uncommitted)
+
+- Backend: `GET /map/{point_id}/explain` (service `place_explain.py`, prompt
+  `place_explain_v1.txt`): Muse explains the selected place and night on request in es, en,
+  ay or qu, with what happened, what came next (the following processed night, if any),
+  catalog actions and sources from a fixed, checked list (SENAMHI, Defensa Civil, Radio San
+  Gabriel, ABI, Copernicus). Placeholders keep the place and date out of the prompt. Stored
+  by facts hash; API errors and the per-user limit (30 per hour) are not stored. 7 new
+  tests, 99 pass, ruff clean. No live Muse call was made from this session.
+- App: the map sheet shows risk, the observed outcome in one sentence and the Muse card
+  (thinking animation, listen button, numbered actions, links that open in the browser).
+  Drivers, conditions, reliability and model metrics moved into a closed "Technical
+  information" section, also on the alert detail.
+- Pending: the alert explainer (`explain.py`) still sends the place name and night date to
+  Muse, unlike spec 02; ay and qu UI labels for the new screens fall back to Spanish.
+- To use it: rebuild the backend container (`docker compose up -d --build backend`).
+
+## Muse reply fix and Aymara/Quechua listening (2026-11-04, uncommitted)
+
+- Bug: `GET /map/{point_id}/explain` returned 500 because Muse Spark spent the whole
+  `max_tokens` (default 700) on reasoning and replied with empty content. The default is now
+  8000 (`MUSE_MAX_TOKENS`, also used by alert explanations, which were silently falling back
+  to the template), the HTTP timeout 120 s (`MUSE_TIMEOUT_S`). Empty or cut replies fall
+  back to the template, are not stored, and are logged with `finish_reason` and reasoning
+  tokens. This exceeds the spec 02 target of 400 tokens, which a reasoning model cannot meet.
+  The app waits up to 150 s for this call. 100 backend tests pass.
+- App: "Read and listen in" chips (Spanish, English, Aymara, Quechua) on the Muse card:
+  picking a language generates the text in it, shows it, then reads it aloud. Phones have
+  no Aymara or Quechua voice, so those texts are read with the Spanish voice (apostrophes
+  removed) and the app says so.
+
+## One explanation, translated (2026-11-04, uncommitted)
+
+- Place explanations are generated once per place and night in Spanish (prompt
+  `place-explain-v2` key) and translated by Muse for en, ay and qu (`place_translate_v1.txt`).
+  Translations keep the `{place}`/`{night}` placeholders, the item counts and only numbers
+  from the facts; a failed translation is stored so it is not re-sent, and the Spanish text
+  is shown. API field `translated`. 102 backend tests pass.
+
+## New logo (2026-11-04, uncommitted)
+
+- Logo replaced by design D from the builder (map pin with peak, snowflake and red dot on
+  beige): `src/ui/logo.tsx`, `assets/logo.svg`, `logo-horizontal.svg`, `logo-mono.svg`
+  (mask cut-outs), `scripts/check-logo.mjs` updated. Icons regenerated; app icon and Android
+  adaptive background are beige, the Android foreground is padded to the safe zone, splash
+  background is beige (`app.json`). New theme token `logoMountain`.

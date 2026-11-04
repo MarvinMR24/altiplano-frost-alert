@@ -7,11 +7,11 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 Level = Literal["low", "moderate", "high", "very_high"]
-Language = Literal["es", "en"]
+Language = Literal["es", "en", "ay", "qu"]
 Profile = Literal["producer", "resident"]
 Threshold = Literal[30, 50, 70]
 Channel = Literal["push", "email"]
-Purpose = Literal["login", "notification_email"]
+Purpose = Literal["login", "notification_email", "register", "reset_password"]
 
 
 class StrictIn(BaseModel):
@@ -31,10 +31,62 @@ class EmailVerifyIn(StrictIn):
     purpose: Purpose = "login"
 
 
+def check_password_rules(value: str) -> str:
+    """Shared password policy: at least 8 characters, one letter and one number."""
+    if len(value) < 8 or not any(c.isalpha() for c in value) or not any(c.isdigit() for c in value):
+        raise ValueError("password needs at least 8 characters, one letter and one number")
+    return value
+
+
+class RegisterIn(StrictIn):
+    name: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=200)
+    phone: str | None = Field(default=None, min_length=6, max_length=20, pattern=r"^[+\d][+\d ]*$")
+    language: Language = "es"
+
+    @field_validator("password")
+    @classmethod
+    def _password_rules(cls, v: str) -> str:
+        return check_password_rules(v)
+
+
+class LoginIn(StrictIn):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=200)
+
+
+class ForgotIn(StrictIn):
+    email: EmailStr
+
+
+class ResetIn(StrictIn):
+    email: EmailStr
+    code: str = Field(pattern=r"^\d{6}$")
+    new_password: str = Field(min_length=8, max_length=200)
+
+    @field_validator("new_password")
+    @classmethod
+    def _password_rules(cls, v: str) -> str:
+        return check_password_rules(v)
+
+
+class ChangePasswordIn(StrictIn):
+    current_password: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=8, max_length=200)
+
+    @field_validator("new_password")
+    @classmethod
+    def _password_rules(cls, v: str) -> str:
+        return check_password_rules(v)
+
+
 class UserOut(BaseModel):
     id: str
     email: str
     name: str | None
+    phone: str | None = None
+    email_verified: bool = False
     language: Language
     profile: Profile
     crops: list[str]
@@ -122,6 +174,24 @@ class CellOut(BaseModel):
     conditions_1800: dict[str, float]
     historical_reliability: Reliability
     observed: Observed | None = None
+
+
+class SourceOut(BaseModel):
+    name: str
+    url: str
+    why: str
+
+
+class PlaceExplanationOut(BaseModel):
+    point_id: str
+    night_date: str
+    language: Language
+    source: Literal["muse", "template"]
+    headline: str
+    what_happened: str
+    what_next: str
+    actions: list[str]
+    sources: list[SourceOut]
 
 
 class MapOut(BaseModel):

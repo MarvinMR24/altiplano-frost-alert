@@ -42,6 +42,12 @@ LEVEL_LABELS = {
     "en": {"low": "low", "moderate": "moderate", "high": "high", "very_high": "very high"},
 }
 
+
+def content_language(language: str) -> str:
+    """Language for explanations, emails and push. Catalogs exist only in es and en,
+    so ay and qu users get the Spanish version."""
+    return language if language in ("es", "en") else "es"
+
 # (id, minimum level, {lang: text}). Qualitative only: no damage thresholds, no crop
 # temperatures, no medical or health advice.
 ACTIONS: dict[str, list[tuple[str, str, dict[str, str]]]] = {
@@ -136,6 +142,7 @@ class Facts:
 
 
 def build_facts(rec: CellRecord, profile: str, language: str, groups: list[DriverGroup] | None = None) -> Facts:
+    language = content_language(language)
     groups = groups if groups is not None else group_drivers(rec.top_drivers)
     rel = rec.historical_reliability
     return Facts(
