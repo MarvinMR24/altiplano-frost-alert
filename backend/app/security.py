@@ -1,7 +1,9 @@
-"""Sessions (JWT HS256, 30 days), login code hashing and basic in-memory rate limiting."""
+"""Sessions (JWT HS256, 30 days), login code hashing, password hashing (hashlib.scrypt,
+standard library only) and basic in-memory rate limiting."""
 
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import hashlib
 import hmac
@@ -15,6 +17,39 @@ import jwt
 from .config import Settings
 
 ALGORITHM = "HS256"
+
+# Password hashing: scrypt with a random 16 byte salt per user.
+_SCRYPT_N = 2**14
+_SCRYPT_R = 8
+_SCRYPT_P = 1
+_SCRYPT_DKLEN = 32
+
+
+def hash_password(password: str) -> str:
+    """Hash a password. Stored as "scrypt$n$r$p$salt_b64$hash_b64"."""
+    salt = secrets.token_bytes(16)
+    dk = hashlib.scrypt(password.encode(), salt=salt, n=_SCRYPT_N, r=_SCRYPT_R, p=_SCRYPT_P,
+                        dklen=_SCRYPT_DKLEN)
+    salt_b64 = base64.b64encode(salt).decode()
+    hash_b64 = base64.b64encode(dk).decode()
+    return f"scrypt${_SCRYPT_N}${_SCRYPT_R}${_SCRYPT_P}${salt_b64}${hash_b64}"
+
+
+def password_matches(password: str, stored: str | None) -> bool:
+    """Compare a password against a stored hash with hmac.compare_digest."""
+    if not stored:
+        return False
+    try:
+        name, n, r, p, salt_b64, hash_b64 = stored.split("$")
+        if name != "scrypt":
+            return False
+        salt = base64.b64decode(salt_b64.encode())
+        expected = base64.b64decode(hash_b64.encode())
+        dk = hashlib.scrypt(password.encode(), salt=salt, n=int(n), r=int(r), p=int(p),
+                            dklen=len(expected))
+    except (ValueError, TypeError):
+        return False
+    return hmac.compare_digest(dk, expected)
 
 
 def generate_code() -> str:
@@ -66,6 +101,15 @@ class RateLimiter:
                 return False
             hits.append(now)
             return True
+
+    def denied(self, key: str, limit: int, window_s: float) -> bool:
+        """True when the key already hit the limit. Records nothing."""
+        now = time.monotonic()
+        with self._lock:
+            hits = self._hits[key]
+            while hits and hits[0] <= now - window_s:
+                hits.popleft()
+            return len(hits) >= limit
 
     def reset(self) -> None:
         with self._lock:

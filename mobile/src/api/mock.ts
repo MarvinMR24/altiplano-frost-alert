@@ -21,20 +21,27 @@ import {
   type AoiPatch,
   type Api,
   type CoverageResponse,
+  type Language,
   type MapResponse,
   type ModelCard,
   type NightsResponse,
+  type PlaceExplanation,
+  type RegisterInput,
   type User,
   type UserPatch,
   type VerifyResponse,
 } from './types';
 
+function explanationText(language: string) {
+  return MOCK_EXPLANATION_TEXT[language as 'es' | 'en'] ?? MOCK_EXPLANATION_TEXT.es;
+}
+
 const LATENCY_MS = 250;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_RE = /^\d{6}$/;
 
-function wait<T>(value: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(value), LATENCY_MS));
+function wait<T>(value: T, ms = LATENCY_MS): Promise<T> {
+  return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
 function clone<T>(value: T): T {
@@ -50,11 +57,14 @@ interface MockAlertRecord {
   channels_sent: ('push' | 'email')[];
   sent_at: string;
   read: boolean;
+  mode: 'replay' | 'tick';
+  explanation_source: 'muse' | 'template';
 }
 
 export class MockApi implements Api {
   private token: string | null = null;
   private users = new Map<string, User>();
+  private passwords = new Map<string, string>();
   private coverage: CoverageResponse = mockCoverage();
   private aois: Aoi[] = [];
   private alerts: MockAlertRecord[] = [];
@@ -82,12 +92,12 @@ export class MockApi implements Api {
       channels: { push: true, email: true },
     };
     this.aois.push(aoi);
-    const seeds: [string, string, boolean][] = [
-      [MOCK_NIGHTS[0], 'patacamaya', true],
-      [MOCK_NIGHTS[1], 'calamarca', true],
-      [MOCK_NIGHTS[3], 'patacamaya', false],
+    const seeds: [string, string, boolean, 'replay' | 'tick', 'muse' | 'template'][] = [
+      [MOCK_NIGHTS[0], 'patacamaya', true, 'replay', 'muse'],
+      [MOCK_NIGHTS[1], 'calamarca', true, 'tick', 'template'],
+      [MOCK_NIGHTS[3], 'patacamaya', false, 'replay', 'muse'],
     ];
-    seeds.forEach(([night, pointId, read], i) => {
+    seeds.forEach(([night, pointId, read, mode, explanation_source], i) => {
       this.alerts.push({
         id: `alert-mock-${i + 1}`,
         aoi_id: aoi.id,
@@ -97,6 +107,8 @@ export class MockApi implements Api {
         channels_sent: ['push', 'email'],
         sent_at: `${night}T23:30:00Z`,
         read,
+        mode,
+        explanation_source,
       });
     });
   }
@@ -122,6 +134,8 @@ export class MockApi implements Api {
       id: `user-${this.nextId++}`,
       email,
       name: null,
+      phone: null,
+      email_verified: true,
       language: 'es',
       profile: 'producer',
       crops: [],
@@ -144,7 +158,61 @@ export class MockApi implements Api {
       user = this.newUser(email, false);
       this.users.set(email, user);
     }
+    user.email_verified = true;
     return wait({ session_token: `mock:${email}`, user: clone(user) });
+  }
+
+  async register(input: RegisterInput): Promise<void> {
+    if (!EMAIL_RE.test(input.email)) throw new ApiError(422, 'invalid_email');
+    const existing = this.users.get(input.email);
+    if (existing?.email_verified && this.passwords.has(input.email)) return wait(undefined);
+    let user = existing;
+    if (!user) {
+      user = this.newUser(input.email, false);
+      this.users.set(input.email, user);
+    }
+    user.name = input.name;
+    user.phone = input.phone ?? null;
+    user.language = input.language;
+    user.email_verified = false;
+    this.passwords.set(input.email, input.password);
+    return wait(undefined);
+  }
+
+  async verifyRegister(email: string, code: string): Promise<VerifyResponse> {
+    if (!CODE_RE.test(code)) throw new ApiError(400, 'invalid_code');
+    const user = this.users.get(email);
+    if (!user || !this.passwords.has(email)) throw new ApiError(400, 'invalid_code');
+    user.email_verified = true;
+    return wait({ session_token: `mock:${email}`, user: clone(user) });
+  }
+
+  async loginWithPassword(email: string, password: string): Promise<VerifyResponse> {
+    const user = this.users.get(email);
+    if (!user || this.passwords.get(email) !== password) throw new ApiError(401, 'wrong email or password');
+    if (!user.email_verified) throw new ApiError(403, 'email_not_verified');
+    return wait({ session_token: `mock:${email}`, user: clone(user) });
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    if (!EMAIL_RE.test(email)) throw new ApiError(422, 'invalid_email');
+    return wait(undefined);
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<VerifyResponse> {
+    if (!CODE_RE.test(code)) throw new ApiError(400, 'invalid_code');
+    const user = this.users.get(email);
+    if (!user) throw new ApiError(400, 'invalid_code');
+    user.email_verified = true;
+    this.passwords.set(email, newPassword);
+    return wait({ session_token: `mock:${email}`, user: clone(user) });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const user = this.currentUser();
+    if (this.passwords.get(user.email) !== currentPassword) throw new ApiError(401, 'wrong current password');
+    this.passwords.set(user.email, newPassword);
+    return wait(undefined);
   }
 
   async verifyNotificationEmail(email: string, code: string): Promise<User> {
@@ -198,6 +266,38 @@ export class MockApi implements Api {
       model_version: MOCK_MODEL_VERSION,
       cells: mockCellsFor(date),
     });
+  }
+
+  async getPlaceExplanation(pointId: string, night: string, lang: Language): Promise<PlaceExplanation> {
+    this.currentUser();
+    const cell = mockCellsFor(night).find((c) => c.point_id === pointId);
+    if (!cell) throw new ApiError(404, 'unknown_point');
+    const pct = Math.round(cell.probability * 100);
+    const en = lang === 'en';
+    // Mock mode never calls Muse: a fixed template, labeled as such in the app.
+    return wait(
+      {
+        point_id: pointId,
+        night_date: night,
+        language: en ? 'en' : 'es',
+        source: 'template',
+        headline: en ? `Frost risk in ${cell.name}: ${pct}%` : `Riesgo de helada en ${cell.name}: ${pct}%`,
+        what_happened: en
+          ? `SIMULATED DATA. That night the frost risk in ${cell.name} was ${pct}%.`
+          : `DATOS SIMULADOS. Esa noche el riesgo de helada en ${cell.name} fue ${pct}%.`,
+        what_next: en
+          ? 'Check the official SENAMHI forecast for the next nights.'
+          : 'Revise el pronóstico oficial de SENAMHI para las próximas noches.',
+        actions: en
+          ? ['Cover sensitive crops before dusk.', 'Keep young animals in sheltered corrals.']
+          : ['Cubra los cultivos sensibles antes del anochecer.', 'Guarde las crías en corrales protegidos.'],
+        sources: [
+          { name: 'SENAMHI Bolivia', url: 'https://senamhi.gob.bo', why: en ? 'Official forecast.' : 'Pronóstico oficial.' },
+          { name: 'Radio San Gabriel', url: 'https://radiosangabriel.org.bo', why: en ? 'Altiplano news.' : 'Noticias del Altiplano.' },
+        ],
+      },
+      700,
+    );
   }
 
   private withCurrent(aoi: Aoi): Aoi {
@@ -254,7 +354,7 @@ export class MockApi implements Api {
 
   private summary(record: MockAlertRecord): AlertSummary {
     const cell = mockCellsFor(record.night_date).find((c) => c.point_id === record.point_id)!;
-    const text = MOCK_EXPLANATION_TEXT[this.currentUser().language];
+    const text = explanationText(this.currentUser().language);
     return {
       id: record.id,
       aoi_id: record.aoi_id,
@@ -266,6 +366,7 @@ export class MockApi implements Api {
       sent_at: record.sent_at,
       read: record.read,
       headline: text.headline(record.aoi_name),
+      mode: record.mode,
     };
   }
 
@@ -280,7 +381,7 @@ export class MockApi implements Api {
     const record = this.alerts.find((a) => a.id === id);
     if (!record) throw new ApiError(404, 'not_found');
     const cell = mockCellsFor(record.night_date).find((c) => c.point_id === record.point_id)!;
-    const text = MOCK_EXPLANATION_TEXT[this.currentUser().language];
+    const text = explanationText(this.currentUser().language);
     const summary = this.summary(record);
     return wait({
       ...summary,
@@ -295,6 +396,8 @@ export class MockApi implements Api {
       historical_reliability: clone(cell.historical_reliability),
       outcome: cell.observed ? { ...cell.observed } : null,
       model_card_summary: text.summary,
+      mode: record.mode,
+      explanation_source: record.explanation_source,
     });
   }
 

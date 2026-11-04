@@ -114,7 +114,7 @@ Endpoints:
 
 Tables: `users`, `devices`, `aois`, `alerts`, `explanations` (cache), `runs`.
 
-Store only email, push token, language, profile and AOI coordinates. Provide data deletion.
+Store only email, name, optional phone, password hash, push token, language, profile, crops, livestock, default threshold and AOI coordinates. Provide data deletion.
 
 ### 3.6 Commands to implement
 ```

@@ -22,7 +22,7 @@ from ..providers.base import DataProvider
 from . import dedupe
 from .coverage import AoiValidationError
 from .drivers import group_drivers
-from .explain import LEVEL_LABELS, Explainer, build_facts
+from .explain import LEVEL_LABELS, Explainer, build_facts, content_language
 from .notify_email import EmailError, EmailSender, alert_email
 from .notify_push import send_push
 from .risk import aoi_risk, threshold_reached
@@ -130,7 +130,8 @@ def _create_and_send(db: Session, settings: Settings, user: User, aoi: Aoi, risk
         return None
     db.commit()
 
-    label = LEVEL_LABELS[user.language][risk.level]
+    lang = content_language(user.language)
+    label = LEVEL_LABELS[lang][risk.level]
     pct = round(risk.probability * 100)
     sent: list[str] = []
     if aoi.channel_push:
@@ -139,7 +140,7 @@ def _create_and_send(db: Session, settings: Settings, user: User, aoi: Aoi, risk
             db.add(Delivery(alert_id=alert.id, channel="push", status="skipped", error="no_device"))
             summary.delivered("push", "skipped")
         else:
-            title, body = _push_text(user.language, label, aoi.name, risk.night_date, pct, mode, rec.data_source)
+            title, body = _push_text(lang, label, aoi.name, risk.night_date, pct, mode, rec.data_source)
             results = send_push(tokens, title=title, body=body, data={"alert_id": alert.id},
                                 url=settings.expo_push_url, client=push_client)
             for res in results:
@@ -151,7 +152,7 @@ def _create_and_send(db: Session, settings: Settings, user: User, aoi: Aoi, risk
             if any(r.status == "sent" for r in results):
                 sent.append("push")
     if aoi.channel_email:
-        msg = alert_email(user.notification_email, language=user.language, aoi_name=aoi.name, level_label=label,
+        msg = alert_email(user.notification_email, language=lang, aoi_name=aoi.name, level_label=label,
                           night_date=risk.night_date, explanation=expl.payload, probability_pct=pct, cell_name=rec.name,
                           model_version=rec.model_version, data_source=rec.data_source, mode=mode,
                           processed_at=dt.datetime.now(dt.UTC).isoformat(timespec="seconds").replace("+00:00", ""))

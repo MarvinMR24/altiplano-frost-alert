@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     tk.add_argument("--dry-run", action="store_true")
     sd = sub.add_parser("seed-demo", help="Create a demo user with AOIs (flagged DEMO)")
     sd.add_argument("--email", default=DEMO_EMAIL)
-    sd.add_argument("--language", choices=["es", "en"], default="es")
+    sd.add_argument("--language", choices=["es", "en", "ay", "qu"], default="es")
     sd.add_argument("--profile", choices=["producer", "resident"], default="producer")
     args = parser.parse_args(argv)
 
@@ -90,7 +90,7 @@ def _seed(db, args) -> int:
     user = db.scalar(select(User).where(User.email == email))
     if user is None:
         user = User(email=email, notification_email=email, name="DEMO", language=args.language, profile=args.profile,
-                    onboarded=True, is_demo=True)
+                    onboarded=True, is_demo=True, email_verified=True)
         db.add(user)
         db.flush()
     created = 0

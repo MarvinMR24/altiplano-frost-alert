@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import MapView from '@/ui/maps';
 
 import { api, type Channels, type Threshold } from '@/api/client';
+import { fromPolygon } from '@/geo';
 import { useAsync } from '@/hooks/useAsync';
 import { useI18n } from '@/i18n';
 import {
@@ -13,15 +15,18 @@ import {
   Field,
   LoadingView,
   SectionTitle,
-  ThresholdPicker,
   ToggleRow,
   styles as ui,
 } from '@/ui/components';
-import { spacing } from '@/ui/theme';
+import { nativeMapType, useMapLayer } from '@/ui/mapLayer';
+import { HaloPolygon } from '@/ui/mapShapes';
+import { ThresholdField } from '@/ui/ThresholdField';
+import { colors, spacing } from '@/ui/theme';
 
 export default function EditZoneScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useI18n();
+  const { layer } = useMapLayer();
   // The contract has no GET /aois/{id}; the list is small.
   const aois = useAsync(() => api.listAois(), []);
   const aoi = aois.data?.find((a) => a.id === id);
@@ -43,6 +48,12 @@ export default function EditZoneScreen() {
   if (aois.error) return <ErrorView error={aois.error} onRetry={aois.reload} />;
   if (!aoi) return <EmptyView message={t('common.error')} />;
 
+  const coords = fromPolygon(aoi.polygon);
+  const center = coords.reduce(
+    (s, p) => ({ latitude: s.latitude + p.latitude / coords.length, longitude: s.longitude + p.longitude / coords.length }),
+    { latitude: 0, longitude: 0 },
+  );
+
   async function save() {
     if (!name.trim()) {
       setError(t('draw.nameRequired'));
@@ -51,6 +62,7 @@ export default function EditZoneScreen() {
     setSaving(true);
     setError(null);
     try {
+      // The API contract has no polygon in PATCH, so the shape is read-only here.
       await api.updateAoi(id, { name: name.trim(), threshold, channels });
       router.back();
     } catch (err) {
@@ -61,9 +73,20 @@ export default function EditZoneScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.form}>
+      <View style={styles.miniMap}>
+        <MapView
+          style={{ flex: 1 }}
+          initialRegion={{ ...center, latitudeDelta: 0.2, longitudeDelta: 0.2 }}
+          mapType={nativeMapType(layer)}
+          showsPointsOfInterests={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+        >
+          <HaloPolygon coordinates={coords} fillColor={colors.aoiFill} strokeColor={colors.aoiStroke} strokeWidth={2.5} />
+        </MapView>
+      </View>
       <Field label={t('draw.nameLabel')} value={name} onChangeText={setName} maxLength={60} />
-      <SectionTitle>{t('draw.thresholdLabel')}</SectionTitle>
-      <ThresholdPicker value={threshold} onChange={setThreshold} />
+      <ThresholdField value={threshold} onChange={setThreshold} />
       <SectionTitle>{t('draw.channelsLabel')}</SectionTitle>
       <ToggleRow label={t('zones.push')} value={channels.push} onChange={(push) => setChannels({ ...channels, push })} />
       <ToggleRow label={t('zones.email')} value={channels.email} onChange={(email) => setChannels({ ...channels, email })} />
@@ -75,4 +98,11 @@ export default function EditZoneScreen() {
 
 const styles = StyleSheet.create({
   form: { padding: spacing.xl, gap: spacing.md },
+  miniMap: {
+    height: 220,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
 });

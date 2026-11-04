@@ -4,8 +4,10 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { api, type AlertSummary } from '@/api/client';
 import { useAsync } from '@/hooks/useAsync';
 import { useI18n } from '@/i18n';
-import { EmptyView, ErrorView, LevelBadge, LoadingView, styles as ui } from '@/ui/components';
-import { colors, spacing } from '@/ui/theme';
+import { EmptyView, ErrorView, LevelBadge, LoadingView, ReplayTag, styles as ui } from '@/ui/components';
+import { Icon } from '@/ui/icons';
+import { FadeIn, stagger } from '@/ui/motion';
+import { colors, levelColors, spacing } from '@/ui/theme';
 
 export default function HistoryScreen() {
   const { t } = useI18n();
@@ -22,7 +24,11 @@ export default function HistoryScreen() {
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
       refreshing={alerts.loading}
       onRefresh={alerts.reload}
-      renderItem={({ item }) => <AlertRow alert={item} />}
+      renderItem={({ item, index }) => (
+        <FadeIn delay={stagger(index)}>
+          <AlertRow alert={item} />
+        </FadeIn>
+      )}
     />
   );
 }
@@ -33,7 +39,7 @@ function AlertRow({ alert }: { alert: AlertSummary }) {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push(`/alerts/${alert.id}`)}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [styles.row, { borderLeftColor: levelColors[alert.level] }, pressed && { opacity: 0.8 }]}
     >
       <View style={{ flex: 1, gap: spacing.xs }}>
         <View style={styles.titleRow}>
@@ -46,19 +52,25 @@ function AlertRow({ alert }: { alert: AlertSummary }) {
           {alert.aoi_name} · {t('common.night', { date: formatDate(alert.night_date) })} · {t('common.reanalysis')}
         </Text>
         <LevelBadge level={alert.level} probability={alert.probability} />
+        {alert.mode === 'replay' ? <ReplayTag /> : null}
       </View>
+      <Icon name="chevron-right" size={24} color={colors.muted} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     backgroundColor: colors.surface,
     borderRadius: 12,
+    borderLeftWidth: 6,
     padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  unreadDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary },
 });

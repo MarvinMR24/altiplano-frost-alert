@@ -1,7 +1,7 @@
 // Types mirroring docs/api_contract.md. Keep both in sync.
 
 export type Level = 'low' | 'moderate' | 'high' | 'very_high';
-export type Language = 'es' | 'en';
+export type Language = 'es' | 'en' | 'ay' | 'qu';
 export type ProfileType = 'producer' | 'resident';
 export type Threshold = 30 | 50 | 70;
 export type Channel = 'push' | 'email';
@@ -10,6 +10,8 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  phone: string | null;
+  email_verified: boolean;
   language: Language;
   profile: ProfileType;
   crops: string[];
@@ -76,6 +78,19 @@ export interface PolygonGeometry {
   coordinates: Position[][];
 }
 
+// Plain explanation of one place and night, written by Muse on request (or the template).
+export interface PlaceExplanation {
+  point_id: string;
+  night_date: string;
+  language: Language;
+  source: 'muse' | 'template';
+  headline: string;
+  what_happened: string;
+  what_next: string;
+  actions: string[];
+  sources: { name: string; url: string; why: string }[];
+}
+
 export interface CoverageFeature {
   type: 'Feature';
   geometry: PolygonGeometry;
@@ -130,6 +145,7 @@ export interface AlertSummary {
   sent_at: string;
   read: boolean;
   headline: string;
+  mode?: 'replay' | 'tick' | string;
 }
 
 export interface Explanation {
@@ -146,6 +162,9 @@ export interface AlertDetail extends AlertSummary {
   historical_reliability: Reliability;
   outcome: Observed | null;
   model_card_summary: string;
+  data_source?: string;
+  mode?: 'replay' | 'tick' | string;
+  explanation_source?: 'muse' | 'template';
 }
 
 export interface Metrics {
@@ -173,13 +192,27 @@ export interface VerifyResponse {
   user: User;
 }
 
-export type EmailCodePurpose = 'login' | 'notification_email';
+export type EmailCodePurpose = 'login' | 'notification_email' | 'register';
+
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  language: Language;
+}
 
 export interface Api {
   setToken(token: string | null): void;
   requestEmailCode(email: string, purpose?: EmailCodePurpose): Promise<void>;
   verifyEmailCode(email: string, code: string): Promise<VerifyResponse>;
   verifyNotificationEmail(email: string, code: string): Promise<User>;
+  register(input: RegisterInput): Promise<void>;
+  verifyRegister(email: string, code: string): Promise<VerifyResponse>;
+  loginWithPassword(email: string, password: string): Promise<VerifyResponse>;
+  forgotPassword(email: string): Promise<void>;
+  resetPassword(email: string, code: string, newPassword: string): Promise<VerifyResponse>;
+  changePassword(currentPassword: string, newPassword: string): Promise<void>;
   getMe(): Promise<User>;
   patchMe(patch: UserPatch): Promise<User>;
   deleteMe(): Promise<void>;
@@ -187,6 +220,7 @@ export interface Api {
   getCoverage(): Promise<CoverageResponse>;
   getNights(): Promise<NightsResponse>;
   getMap(night?: string): Promise<MapResponse>;
+  getPlaceExplanation(pointId: string, night: string, lang: Language): Promise<PlaceExplanation>;
   listAois(): Promise<Aoi[]>;
   createAoi(body: AoiCreate): Promise<Aoi>;
   updateAoi(id: string, patch: AoiPatch): Promise<Aoi>;
