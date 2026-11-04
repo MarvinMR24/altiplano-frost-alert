@@ -54,12 +54,13 @@
       "batch": 0,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "a4cc0b3e104f4dbeaddc417b072987eaafd737cf9ed7ca9dc26c5139ff5ec5b2",
+      "source": "cache",
+      "cache_key": "72b4df4a5ca75422065df971f5d8612c2442fc182eecbda1bb4ea0f5ec793f26",
       "usage": {
-        "prompt_tokens": 1961,
-        "completion_tokens": 531,
-        "estimated": true
+        "prompt_tokens": 3471,
+        "completion_tokens": 4230,
+        "reasoning_tokens": 3240,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -68,12 +69,13 @@
       "batch": 1,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "b9ffc02f00197913b2dbfb6ec405323607721060995eb989a443ac5524f787b6",
+      "source": "cache",
+      "cache_key": "5dae3daa4482a57caccc957f30addeb62358357cba5d052c6da3d3fc8ea39751",
       "usage": {
-        "prompt_tokens": 1957,
-        "completion_tokens": 525,
-        "estimated": true
+        "prompt_tokens": 3481,
+        "completion_tokens": 4866,
+        "reasoning_tokens": 3831,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -82,12 +84,13 @@
       "batch": 2,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "b82340b8cf67936e482d33834fbea03ef79924af7c20cdde42d652f0d46ae907",
+      "source": "cache",
+      "cache_key": "83f01322f5d3e8882d8ce7fb3bf35c2cd020e52e48ef7eda20727f70910e7fd3",
       "usage": {
-        "prompt_tokens": 2007,
-        "completion_tokens": 540,
-        "estimated": true
+        "prompt_tokens": 3624,
+        "completion_tokens": 3717,
+        "reasoning_tokens": 2715,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -96,12 +99,13 @@
       "batch": 3,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "cb782919c44d24858d7279e8b87295ee034c643fd41d37071d2dedeb3942a3a3",
+      "source": "cache",
+      "cache_key": "fba444134e7bd1ac6ceb582cd081c69b79729260a6953e8a4978fd4bd890b58b",
       "usage": {
-        "prompt_tokens": 1958,
-        "completion_tokens": 526,
-        "estimated": true
+        "prompt_tokens": 3473,
+        "completion_tokens": 6471,
+        "reasoning_tokens": 5448,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -110,12 +114,13 @@
       "batch": 4,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "a0488aa5dc1c7704bf279f887a980d0214eed8a24e76bc7aaf838c9e3fd77da3",
+      "source": "cache",
+      "cache_key": "4d7d6eede8d26ac89d4b1cf0eb3a39eb5dcb76a4b86695f5eb31b7b50800f786",
       "usage": {
-        "prompt_tokens": 1941,
-        "completion_tokens": 531,
-        "estimated": true
+        "prompt_tokens": 3429,
+        "completion_tokens": 4815,
+        "reasoning_tokens": 3784,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -124,12 +129,13 @@
       "batch": 5,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "abfe0efb73e6ceb4caacf770dd19aef9b5bdbc872b014bb7f3f40672d06f0479",
+      "source": "cache",
+      "cache_key": "e5392086deb01e293107b80a053a14d1db318aa47594011748372f485d004793",
       "usage": {
-        "prompt_tokens": 1954,
-        "completion_tokens": 525,
-        "estimated": true
+        "prompt_tokens": 3470,
+        "completion_tokens": 5380,
+        "reasoning_tokens": 4349,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -138,12 +144,13 @@
       "batch": 6,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "7c2f577b3e1bc2f80e884c4166549a9fdb0c8e69b95087166d28136acc53dd50",
+      "source": "cache",
+      "cache_key": "a6a78d2504ef6241e9ec69ca4fa696a3e77f840ef30085d874da34c5c024d87d",
       "usage": {
-        "prompt_tokens": 1973,
-        "completion_tokens": 525,
-        "estimated": true
+        "prompt_tokens": 3535,
+        "completion_tokens": 7738,
+        "reasoning_tokens": 6666,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -152,12 +159,13 @@
       "batch": 7,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "9d6e384bb30b7c423a547a7d7fc5c9e3849a241929254bc16aa55c2c91061f9d",
+      "source": "cache",
+      "cache_key": "ebb0ce28466da4ca8d42a6251009eb6b6f031b9a8f35b84523d626a413626a18",
       "usage": {
-        "prompt_tokens": 1989,
-        "completion_tokens": 525,
-        "estimated": true
+        "prompt_tokens": 3570,
+        "completion_tokens": 5274,
+        "reasoning_tokens": 4233,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -166,12 +174,13 @@
       "batch": 8,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "71a116b9ac871500ef4b284d4a297f17bbba627c4f34521f586a88ce6ed4e6c2",
+      "source": "cache",
+      "cache_key": "a7a42aa2971336b2746245d7007e6d7e24d8a99607677e736d0c42cc575bdd05",
       "usage": {
-        "prompt_tokens": 2040,
-        "completion_tokens": 524,
-        "estimated": true
+        "prompt_tokens": 3708,
+        "completion_tokens": 4732,
+        "reasoning_tokens": 3733,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -180,12 +189,13 @@
       "batch": 9,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "d2a6ccd2512be714b3bcaa50ae1b589e413ce0c50f9114d3ec47ed2b687f946c",
+      "source": "cache",
+      "cache_key": "e814a114066a1a481647ee432f6b705b3713c87cd52354786a294d7ad773bb29",
       "usage": {
-        "prompt_tokens": 1974,
-        "completion_tokens": 530,
-        "estimated": true
+        "prompt_tokens": 3523,
+        "completion_tokens": 5120,
+        "reasoning_tokens": 4097,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -194,12 +204,13 @@
       "batch": 10,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "e66ecb8487dfb31f45ad9045c6054be5e8f0997205eaaaa10bd66ae65acfa296",
+      "source": "cache",
+      "cache_key": "8263224147558bc072a242d561b2ac094a449b5c2af24689cd05738805f5ee3b",
       "usage": {
-        "prompt_tokens": 1894,
-        "completion_tokens": 537,
-        "estimated": true
+        "prompt_tokens": 3290,
+        "completion_tokens": 4017,
+        "reasoning_tokens": 2995,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -208,12 +219,13 @@
       "batch": 11,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "cc5d083a5d583a6f4e7cdc3cd38d90530c8b18009581f1e6d46b85af5704a994",
+      "source": "cache",
+      "cache_key": "b08361727918f5984c618376393e170dfee0cee0810dcb4792058a04b0798008",
       "usage": {
-        "prompt_tokens": 1976,
-        "completion_tokens": 540,
-        "estimated": true
+        "prompt_tokens": 3516,
+        "completion_tokens": 5004,
+        "reasoning_tokens": 3945,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -222,12 +234,13 @@
       "batch": 12,
       "records": 20,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "523945ea35f5cf5b4da3dfc6ebe51efa26da804de9a32b25d19c988281452a59",
+      "source": "cache",
+      "cache_key": "c43da6e1b3a3184f60b27787e3aee944c2e379db923c360afd1fbf036fdc5bb7",
       "usage": {
-        "prompt_tokens": 1941,
-        "completion_tokens": 525,
-        "estimated": true
+        "prompt_tokens": 3426,
+        "completion_tokens": 4944,
+        "reasoning_tokens": 3867,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
@@ -236,19 +249,19 @@
       "batch": 13,
       "records": 17,
       "status": "ok",
-      "source": "mock",
-      "cache_key": "511f95f6f037701fb9aa512aba545b2c079e05005b73bfe3cdd0e59f3dbc7560",
+      "source": "cache",
+      "cache_key": "bd62904cc6bedbf98003ca850f8d8958abf5a11342e373634abed620f81323ee",
       "usage": {
-        "prompt_tokens": 1733,
-        "completion_tokens": 458,
-        "estimated": true
+        "prompt_tokens": 3051,
+        "completion_tokens": 4172,
+        "reasoning_tokens": 3318,
+        "finish_reason": "stop"
       },
       "error": null,
       "schema_errors": []
     }
   ],
   "decisions": {
-    "kept": 264,
-    "applied": 13
+    "kept": 277
   }
 }

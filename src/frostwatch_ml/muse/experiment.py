@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import json
 import platform
+import time
+from datetime import datetime
 from typing import Any
 
 import joblib
@@ -43,6 +45,12 @@ USAGE_DOC = config.DOCS / "muse_usage.md"
 SAMPLE_CALLS = config.ROOT / "logs" / "sample_muse_calls.jsonl"
 REPRODUCE = ".venv/bin/python pipelines/05_muse_correct.py --config configs/muse.yaml --no-sync"
 FEATURE_KEYS = ["point_id", "night_date"]
+_T0 = [time.monotonic()]
+
+
+def step(msg: str) -> None:
+    """Progress line on the console with wall clock and elapsed time."""
+    print(f"[{datetime.now().strftime('%H:%M:%S')} +{time.monotonic() - _T0[0]:6.0f}s] {msg}", flush=True)
 
 
 # Data -----------------------------------------------------------------------------------------
@@ -179,7 +187,7 @@ def smoke(mcfg: dict, seed: int, n: int) -> dict[str, Any]:
     plan = plan_b1(mcfg, seed, frost_cfg, convs)
     system, pv = prompt_version(mcfg["prompts"]["anomaly_review"])
     batch = plan["records"][:n]
-    client = MuseClient(mcfg)
+    client = MuseClient(mcfg, verbose=True)
     res = client.call("smoke_anomaly_review", pv, system, {"records": batch}, review.mock_review)
     items, errors = schema.validate_review(res.parsed, [r["id"] for r in batch])
     return {"mock": client.mock, "status": res.status, "source": res.source, "usage": res.usage, "error": res.error,
@@ -188,16 +196,20 @@ def smoke(mcfg: dict, seed: int, n: int) -> dict[str, Any]:
 
 
 def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -> dict[str, Any]:
+    _T0[0] = time.monotonic()
     frost_cfg = config.frost_config()
     rcfg, pcfg = mcfg["anomaly_review"], mcfg["feature_proposals"]
-    client = MuseClient(mcfg)
+    client = MuseClient(mcfg, verbose=True)
+    step(f"start: max_tokens {client.max_tokens}, experiment cap {mcfg['budget']['experiment_cap_usd']} USD")
     usage_before = costs.summarize(costs.read_usage(client.usage_log))
     a = pd.read_parquet(config.PROCESSED / "features.parquet")
     a_hash = content_sha256(a)
     run_id = f"muse-ab-{a_hash[:8]}"
     feats = leakage.feature_list()
 
+    step("loading hourly ERA5-Land and AgERA5 series (8 cells)")
     convs, agera = load_hourly()
+    step("building the B1 plan: clipping, in-scope flags, sample, masked records")
     plan = plan_b1(mcfg, seed, frost_cfg, convs)
     sys_review, pv_review = prompt_version(mcfg["prompts"]["anomaly_review"])
     sys_prop, pv_prop = prompt_version(mcfg["prompts"]["feature_proposals"])
@@ -213,10 +225,12 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
         return {"run_id": run_id, "estimate": est, "funnel": plan["funnel"], "dry_run": True}
 
     # Sanity check: the same code on the unmodified series reproduces the A table exactly.
+    step("sanity check: rebuilding the A night table from the unmodified series")
     rebuilt = build_table(convs, agera, frost_cfg)
     if content_sha256(rebuilt) != a_hash:
         raise RuntimeError("rebuilding the night table without changes does not reproduce features.parquet")
     del rebuilt
+    step("sanity check ok: rebuilt table equals features.parquet")
 
     # B1: Muse review of the sampled flagged hours
     sample, batches = plan["sample"], plan["batches"]
@@ -225,8 +239,13 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
     for bi, batch in enumerate(batches):
         payload = {"records": batch}
         masking.assert_masked(payload)
+        step(f"B1 batch {bi + 1}/{len(batches)} ({len(batch)} records)")
         res = client.call("anomaly_review", pv_review, sys_review, payload, review.mock_review)
         got, errs = schema.validate_review(res.parsed, [r["id"] for r in batch]) if res.status == "ok" else ({}, [])
+        n_corr = sum(1 for g in got.values() if g["action"] == "correct")
+        step(f"B1 batch {bi + 1}/{len(batches)}: {res.status}, {len(got)} valid items "
+             f"({len(got) - n_corr} keep, {n_corr} correct), {len(errs)} schema problems"
+             + (f": {errs[:3]}" if errs else ""))
         items.update(got)
         batch_status[bi] = res.status
         call_log.append({"batch": bi, "records": len(batch), "status": res.status, "source": res.source,
@@ -248,17 +267,21 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
                       pd.DataFrame(decisions)], axis=1)
     corr["new_value"] = new_values
     applied = corr[corr["decision"] == "applied"]
+    step(f"B1 decisions: {corr['decision'].value_counts().to_dict()}")
+    step("rebuilding night tables: clipped only, then clipped plus Muse corrections")
     conv_b = {pid: review.apply_corrections(c, applied[applied["point_id"] == pid]) for pid, c in plan["clipped"].items()}
     clip_t = with_labels_of(build_table(plan["clipped"], agera, frost_cfg), a)
     b1 = with_labels_of(build_table(conv_b, agera, frost_cfg), a)
     diff_clip = diff_values(a, clip_t, feats)
     diff_muse = diff_values(clip_t, b1, feats)
     del clip_t
+    step(f"feature values changed: {diff_clip['values_changed']} by clipping, {diff_muse['values_changed']} by Muse corrections")
 
     # B2: one call, Muse proposes formulas, code computes them
     train_b1 = leakage.model_rows(b1, "train")
     prop_payload = proposals.summary_payload(train_b1, names, pcfg)
     masking.assert_masked(prop_payload)
+    step(f"B2: one feature proposal call ({len(names)} feature summaries)")
     pres = client.call("feature_proposals", pv_prop, sys_prop, prop_payload, proposals.mock_proposals)
     cands, prop_errors = schema.validate_proposals(pres.parsed, pcfg["max_features"]) if pres.status == "ok" else ([], [pres.status])
     model_mask = b1["split"].isin(["train", "validation"]) & b1["frost"].notna()
@@ -268,6 +291,10 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
     for name, row in ((r["column"], r) for r in prop_rows if r["column"]):
         b[name] = proposals.formula.evaluate(proposals.formula.parse(row["formula"], set(names)), b1)
     features_b = feats + list(cols)
+    for r in prop_rows:
+        step(f"B2 candidate {r['candidate']} {r['muse_name']}: {r['decision']} | {r['formula']}")
+    if prop_errors:
+        step(f"B2 schema problems: {prop_errors}")
 
     # Models on validation
     a_data = runner.load_model_data()
@@ -275,8 +302,11 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
     cand = read_json(config.PROCESSED / "model_candidates.json")["finalists"]["LR_best"]
     params = dict(cand["params"])
     cv_splits = config.model_config()["round2"]["calibration"]["cv_splits"]
+    step(f"fitting A ({len(a_data.features)} features) with calibration (5 year-grouped folds)")
     res_a, cal_a = fit_like_best(a_data, params, seed, cv_splits, "A_LR_best")
+    step(f"A done: PR-AUC {res_a.pooled['pr_auc']:.4f}, F2 {res_a.pooled['f2']:.4f}; fitting B ({len(b_data.features)} features)")
     res_b, cal_b = fit_like_best(b_data, params, seed, cv_splits, "B_muse")
+    step(f"B done: PR-AUC {res_b.pooled['pr_auc']:.4f}, F2 {res_b.pooled['f2']:.4f}; scoring baselines")
     ref_id = mcfg["decision_rule"]["reference_run"]
     stored = read_json(config.EXPERIMENTS / ref_id / "metrics.json")
     check_keys = ["pr_auc", "f2", "precision", "recall", "f1", "roc_auc", "brier", "accuracy", "threshold"]
@@ -299,6 +329,7 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
     verdict = "B passes on validation; adopt only if it also passes on test" if adopted else "ship A"
 
     # Outputs -------------------------------------------------------------------------------
+    step(f"verdict: {verdict} (gain PR-AUC {gain['pr_auc']:+.4f}, F2 {gain['f2']:+.4f}); writing outputs")
     exp_dir = config.EXPERIMENTS / run_id
     write_csv(corr, OUT / "corrections.csv", index=False)
     write_parquet(b, OUT / "features_b.parquet")
@@ -380,6 +411,7 @@ def run(mcfg: dict, seed: int, dry_run: bool = False, log_mlflow: bool = True) -
                                     {"data_hash": a_hash, "data_hash_b": b_data.data_hash, "verdict": verdict,
                                      "test_set": "locked, not evaluated", "git_head": mlflow_logger.git_head()},
                                     [exp_dir / "config.yaml", exp_dir / "metrics.json"])
+    step("done")
     return {"run_id": run_id, "estimate": est, "run_stats": run_stats, "decisions": decision_counts,
             "diff_muse": diff_muse, "diff_clip": diff_clip, "b2": prop_rows, "pooled": pooled, "gain": gain,
             "adopted": adopted, "verdict": verdict, "a_confirmed": a_confirmed, "mlflow_url": url,
@@ -519,6 +551,12 @@ def write_report(run_id, run_stats, usage, est, funnel, decision_counts, corr, d
         "every row of the history, which the project rules forbid. Future work: a capped, masked sample with a separate "
         "condition and its own budget.",
         "- Prices used for cost are configured in `configs/muse.yaml` and marked verify. Token counts come from the API usage field.",
+        *([f"- Run history: {usage['by_purpose'].get('anomaly_review', {}).get('invalid_json', 0)} review calls and "
+           f"{usage['by_purpose'].get('feature_proposals', {}).get('invalid_json', 0)} proposal calls in the usage log returned "
+           "invalid JSON. A first real attempt used max_tokens 4000; Muse Spark counts reasoning tokens toward that limit, so "
+           "every answer was cut (finish_reason length). Those calls are logged and included in the cost; their requests "
+           "differ from the current ones, so they are not reused."]
+          if sum(v.get("invalid_json", 0) for v in usage["by_purpose"].values()) else []),
         "",
         "## Cost",
         "",
@@ -541,10 +579,11 @@ def cfg_cap() -> int:
 def write_usage_doc(usage_log) -> None:
     entries = costs.read_usage(usage_log)
     s = costs.summarize(entries)
-    by = pd.DataFrame(s["by_purpose"]).T if s["by_purpose"] else pd.DataFrame()
+    by = pd.DataFrame.from_dict(s["by_purpose"], orient="index") if s["by_purpose"] else pd.DataFrame()
+    cap = config.load_yaml("configs/muse.yaml")["budget"]["experiment_cap_usd"]
     if len(by):
         by.index.name = "purpose"
-    calls = pd.DataFrame([{k: e.get(k) for k in ("ts", "purpose", "status", "prompt_tokens", "completion_tokens",
+    calls = pd.DataFrame([{k: e.get(k) for k in ("ts", "purpose", "status", "finish_reason", "prompt_tokens", "completion_tokens", "reasoning_tokens",
                                                    "est_cost_usd", "error")} for e in entries])
     if len(calls):
         calls.index = range(1, len(calls) + 1)
@@ -555,7 +594,7 @@ def write_usage_doc(usage_log) -> None:
              "and the prices in `configs/muse.yaml` (marked verify).", "",
              f"Total: {s['total']['calls']} calls, {s['total']['prompt_tokens']} input tokens, "
              f"{s['total']['completion_tokens']} output tokens, {s['total']['est_cost_usd']:.4f} USD estimated "
-             "(experiment cap 25 USD).", "",
+             f"(experiment cap {cap} USD).", "",
              "## By purpose", "", reports.md_table(by, 4) if len(by) else "No calls yet.", "",
              "## Calls", "", reports.md_table(calls, 6) if len(calls) else "No calls yet.", ""]
     write_text("\n".join(lines), USAGE_DOC)

@@ -1,10 +1,11 @@
 {
   "status": "ok",
-  "source": "mock_cache",
-  "content": "{\"features\": [{\"name\": \"dry_clear_cooling\", \"formula\": \"dewpoint_depression_1800_c * (1 - sky_emissivity_1800)\", \"category\": \"radiative_cooling\", \"rationale\": \"mock: dry air under a clear sky cools faster\"}, {\"name\": \"calm_clear\", \"formula\": \"afternoon_clearness / (1 + wind_1800_ms)\", \"category\": \"wind\", \"rationale\": \"mock: clear and calm evenings favor radiative cooling\"}, {\"name\": \"bad_name\", \"formula\": \"latitude + 1\", \"category\": \"cloud\", \"rationale\": \"mock: invalid on purpose\"}]}",
+  "source": "cache",
+  "content": "{\"features\": [{\"name\": \"cooling_extrap_6h_c\", \"formula\": \"t2m_1800_c + 6 * cooling_rate_1500_1800_c_per_h\", \"category\": \"radiative_cooling\", \"rationale\": \"Extrapolates late-afternoon cooling trend six hours to approximate midnight temperature.\"}, {\"name\": \"soil_air_excess_c\", \"formula\": \"stl1_1800_c - t2m_1800_c\", \"category\": \"radiative_cooling\", \"rationale\": \"Warmer soil than air stores daytime heat that slows nocturnal radiative cooling.\"}, {\"name\": \"dry_clear_index\", \"formula\": \"log1p(max(dewpoint_depression_1800_c, 0)) * afternoon_clearness\", \"category\": \"humidity_deficit\", \"rationale\": \"Dry air combined with clear afternoon amplifies nocturnal radiative heat loss.\"}, {\"name\": \"calm_dry_index\", \"formula\": \"max(3 - wind_1800_ms, 0) * dewpoint_depression_1800_c\", \"category\": \"wind\", \"rationale\": \"Calm winds below 3 m/s limit mixing while dry air enhances radiative cooling.\"}, {\"name\": \"clear_sky_persist\", \"formula\": \"afternoon_clearness * max(1 - sky_emissivity_1800, 0)\", \"category\": \"cloud\", \"rationale\": \"Sustained clear skies from afternoon to evening maximize overnight longwave loss.\"}, {\"name\": \"lw_drop_afternoon_evening\", \"formula\": \"strd_afternoon_mean_wm2 - strd_1800_wm2\", \"category\": \"cloud\", \"rationale\": \"Falling longwave from afternoon to evening signals clearing skies and stronger cooling.\"}]}",
   "usage": {
-    "prompt_tokens": 1155,
-    "completion_tokens": 122,
-    "estimated": true
+    "prompt_tokens": 1595,
+    "completion_tokens": 5145,
+    "reasoning_tokens": 4751,
+    "finish_reason": "stop"
   }
 }

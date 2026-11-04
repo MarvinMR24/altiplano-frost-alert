@@ -219,17 +219,17 @@ about 28.5k input tokens, worst case 0.29 USD (output bounded by max_tokens).
 
 A recheck: recomputing LR_best with the same code reproduces the stored validation metrics exactly.
 
-State: only the MUSE_MOCK=1 run exists. `reports/muse_experiment.md` and
-`experiments/muse-ab-fbbf62c6/` currently hold MOCK numbers (labeled as such) and must be
-overwritten by the real run. The real smoke call and the real run were not executed in this
-session: loading the key from `.env` was blocked for the agent. Next, run from a shell that
-exports META_API_KEY and META_API_BASE_URL:
+Real run (2026-11-04, `muse-ab-fbbf62c6`, mirrored to MLflow on DagsHub):
+- A first real attempt with max_tokens 4000 failed: Muse Spark counts reasoning tokens toward
+  max_tokens, so all 15 answers were cut (invalid JSON, logged, cost counted, not reused). The
+  limit is now 16000; the hard cap for this experiment is 10 USD.
+- B1: Muse kept all 277 flagged hours (0 corrections), so Muse changed 0 feature values. Clipping
+  changed 29009 values of precip_24h_mm by at most about 0.0001 mm.
+- B2: 6 formulas proposed, all 6 accepted by the parser and checks (B has 30 features).
+- Validation, pooled: A PR-AUC 0.8918, F2 0.8757; B PR-AUC 0.8924, F2 0.8769. Gain +0.0006 and
+  +0.0012, below the pre-declared 0.02. Verdict: ship A. `06_final_eval.py` will record B as
+  "not adopted on validation".
+- Cost: 31 real calls in the usage log (smoke, failed attempt, real run), 100925 input and
+  138262 output tokens, about 0.71 USD estimated (prices marked verify).
 
-    MUSE_MOCK=0 .venv/bin/python pipelines/05_muse_correct.py --smoke 2 --no-sync
-    MUSE_MOCK=0 .venv/bin/python pipelines/05_muse_correct.py --no-sync
-    MUSE_MOCK=0 .venv/bin/python pipelines/05_muse_correct.py --no-sync   # must show 0 API calls
-
-Then `dvc commit muse_correct` (or `dvc repro muse_correct`, which reads from the cache) to record
-the stage in `dvc.lock`.
-
-- ngrok removed (2026-11-04): no tunnel service in `docker-compose.yml`, no `NGROK_*` variables. Local testing uses `localhost:8000`; Expo Go will use the AWS URL. The `ngrok-skip-browser-warning` header was removed from the mobile client and the contract.
+Pending for the builder: one cache re-run (must show 0 API calls), then `dvc commit muse_correct`.
