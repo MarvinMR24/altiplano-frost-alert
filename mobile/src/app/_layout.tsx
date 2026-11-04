@@ -53,15 +53,26 @@ function RootNavigator() {
         {status === 'loading' ? (
           <LoadingView />
         ) : (
-          <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
+          <Stack
+            screenOptions={{
+              contentStyle: { backgroundColor: colors.background },
+              headerStyle: { backgroundColor: colors.headerBg },
+              headerTintColor: colors.headerText,
+              headerTitleStyle: { fontWeight: '700' },
+            }}
+          >
             <Stack.Protected guard={!signedIn}>
+              <Stack.Screen name="welcome" options={{ headerShown: false }} />
+              <Stack.Screen name="signup" options={{ headerShown: false }} />
               <Stack.Screen name="login" options={{ headerShown: false }} />
-              <Stack.Screen name="verify" options={{ title: '', headerBackTitle: t('common.back') }} />
+              <Stack.Screen name="verify" options={{ headerShown: false }} />
+              <Stack.Screen name="forgot" options={{ headerShown: false }} />
             </Stack.Protected>
-            <Stack.Protected guard={signedIn && !user?.onboarded}>
+            {/* Signed out visitors land on Welcome (not on the first free screen the router picks). */}
+            <Stack.Protected guard={signedIn && !user?.onboarded} redirectTo={signedIn ? '/' : '/welcome'}>
               <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             </Stack.Protected>
-            <Stack.Protected guard={ready}>
+            <Stack.Protected guard={ready} redirectTo={signedIn ? '/onboarding' : '/welcome'}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
                 name="zones/draw"
@@ -73,6 +84,7 @@ function RootNavigator() {
                 name="change-email"
                 options={{ presentation: 'modal', title: t('profile.changeEmailTitle') }}
               />
+              <Stack.Screen name="change-password" options={{ title: t('profile.changePasswordTitle') }} />
             </Stack.Protected>
           </Stack>
         )}

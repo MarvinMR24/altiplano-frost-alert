@@ -57,3 +57,9 @@ models/
 
 # Cowork outputs (prompts and drafts, local only)
 Claude outputs/
+
+# Review scratch files (screenshots, probes)
+reviews/scratch/
+
+# Raw screen recordings for the demo video (local only)
+video_raw/

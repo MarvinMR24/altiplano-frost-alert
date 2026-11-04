@@ -23,3 +23,15 @@ export const externalProviders: ExternalAuthProvider[] = [];
 export function enabledExternalProviders(): ExternalAuthProvider[] {
   return externalProviders.filter((p) => p.enabled);
 }
+
+// Google and Apple are NOT implemented in this version. The buttons are visual only and
+// show a "coming soon" notice. No OAuth code, no client ids, nothing in the backend.
+export const SOCIAL_NOT_IMPLEMENTED: Exclude<ProviderId, 'email'>[] = ['google', 'apple'];
+
+export function isSocialImplemented(id: Exclude<ProviderId, 'email'>): boolean {
+  return !SOCIAL_NOT_IMPLEMENTED.includes(id) && enabledExternalProviders().some((p) => p.id === id);
+}
+
+export function socialComingSoon(): void {
+  // Called when a social button is tapped. Sign-in stays disabled on purpose.
+}
