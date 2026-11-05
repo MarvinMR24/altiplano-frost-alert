@@ -146,7 +146,7 @@ cd mobile && npx expo start
 - README has results, limits and the "Meta tooling used" table. Repo is public with no secrets.
 
 ## 4. Environment variable names (values only in `.env`)
-`META_API_KEY`, `META_API_BASE_URL`, `MUSE_MODEL`, `MUSE_MOCK`, `MUSE_MAX_TOKENS`, `EMAIL_PROVIDER`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASSWORD`, `EMAIL_FROM`, `EXPO_PUSH_URL`, `CDS_API_KEY`, `CDS_API_URL`, `DATABASE_URL`, `DEMO_REPLAY`.
+`META_API_KEY`, `META_API_BASE_URL`, `MUSE_MODEL`, `MUSE_MOCK`, `MUSE_MAX_TOKENS`, `SESSION_SECRET`, `DATA_PROVIDER`, `EMAIL_PROVIDER` (console: codes in the backend log), `PUBLIC_BASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `CORS_ORIGINS`, `CDS_API_KEY`, `CDS_API_URL`, `MLFLOW_TRACKING_URI`. See `.env.example` and `mobile/.env.example`.
 
 ## 5. Repository layout
 ```

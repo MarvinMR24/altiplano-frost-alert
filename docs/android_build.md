@@ -57,7 +57,7 @@ visibility: build servers can read it, nobody can read it back):
 
 ```bash
 read -rs MAPS_KEY                 # paste the key, Enter (keeps it out of shell history)
-npx eas-cli env:set --name GOOGLE_MAPS_ANDROID_API_KEY --value "$MAPS_KEY" \
+npx eas-cli env:set --name GOOGLE_MAPS_API_KEY --value "$MAPS_KEY" \
   --environment preview --environment production --visibility secret --scope project
 unset MAPS_KEY
 ```
@@ -90,6 +90,12 @@ Install the APK (allow installs from your browser or file manager when Android a
 
 If the map is grey with a Google logo, the key is missing or its restrictions do not match
 the package name and SHA-1.
+
+If the app closes right after opening, read the crash with `adb logcat -b crash`. SDK 58
+minifies release builds with R8; `app.config.ts` keeps Room's generated classes through
+`expo-build-properties` (`extraProguardRules`), because without them WorkManager (pulled in
+by react-native-maps) crashes at start with "Failed to create an instance of class
+androidx.work.impl.WorkDatabase".
 
 ## 6. Publish
 

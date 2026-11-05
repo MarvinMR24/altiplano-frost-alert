@@ -9,6 +9,11 @@ Test plan:
 2. Next: Expo Go on the iPhone on the same Wi-Fi against the backend on the Mac
    (`http://<Mac IP>:8000`, no cloud). See below.
 
+
+Quick start: copy `.env.example` to `.env.local` (it points to the hackathon AWS backend until
+2026-11-16; for a local backend use your computer's Wi-Fi address), then `npm install` and
+`npx expo start -c`. Full guide and limitations: "Try it and run it" in the root README.
+
 ## Run on the web (local testing)
 
 ```
@@ -123,7 +128,7 @@ soon"); see `src/auth/providers.ts` and `docs/api_contract.md`. There is no Appl
 ## Android APK and app config
 
 `app.config.ts` replaces `app.json` (same fields) so values come from the environment: the
-Google Maps key (`GOOGLE_MAPS_ANDROID_API_KEY`, an EAS secret, never in the repo), the
+Google Maps key (`GOOGLE_MAPS_API_KEY`, an EAS secret, never in the repo), the
 Android `versionCode` (`ANDROID_VERSION_CODE`) and the EAS project id (`EAS_PROJECT_ID`).
 Android builds use Google Maps (`PROVIDER_GOOGLE` in `src/ui/maps.tsx`), iOS keeps Apple
 Maps, the web keeps Leaflet. Build profiles live in `eas.json`; the APK talks only to the

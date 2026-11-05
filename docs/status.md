@@ -477,7 +477,7 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
 - Production guards already in place: no start without SESSION_SECRET, no console email.
 - Mobile: `app.config.ts` replaces `app.json` (package com.marvinmr24.frostwatch, version
   1.0.0, versionCode from ANDROID_VERSION_CODE, Google Maps key from
-  GOOGLE_MAPS_ANDROID_API_KEY, splash through the expo-splash-screen plugin as SDK 58
+  GOOGLE_MAPS_API_KEY, splash through the expo-splash-screen plugin as SDK 58
   requires, expo-location permission text, EAS project id), `eas.json` (preview APK,
   production AAB), Google Maps provider on Android in `src/ui/maps.tsx`, Expo dependencies
   aligned with `expo install --fix`. Guide: `docs/android_build.md`.
@@ -493,3 +493,25 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
   string; `/auth/providers` returns `{google}`. The old unused Google/Apple stubs in
   `app/auth/providers.py` are gone. Google tests now also cover token checks, account
   linking and secrets not logged. 116 backend tests pass.
+
+## Android release crash fix (2026-11-04, uncommitted)
+
+- The first EAS APK crashed at start: R8 (release minification, on by default in SDK 58)
+  removed Room's generated `WorkDatabase_Impl`, used by WorkManager 2.9.1 from
+  react-native-maps. Added keep rules through `expo-build-properties` in `app.config.ts`.
+  Verified with a local release build on the Pixel 9 emulator: the app opens on Welcome.
+- `app.config.ts` also cleans the Maps key read from `GOOGLE_MAPS_API_KEY` (a value pasted
+  in a terminal carried invisible characters that broke the generated manifest), and
+  `src/app/+native-intent.tsx` keeps the Google sign in return link from opening an
+  unmatched route.
+
+## Open source cleanup and run guide (2026-11-04, uncommitted)
+
+- README: "Try it and run it" (AWS demo until 2026-11-16 or a local run, iPhone with Expo Go
+  recommended, Android needs your own Google Maps key, codes in the backend log, Google sign
+  in), and new limitations.
+- Env files: `.env.example` trimmed to the variables in use (no SMTP, DEMO_REPLAY,
+  DATABASE_URL or EXPO_PUBLIC_*), new `mobile/.env.example`, `.env.production.example` uses
+  `APP_ENV=demo` and console email, `backend/.env.backend.example` updated. SMTP stays in the
+  code but is not used.
+- `video_raw/` removed (moved to the Trash), `reviews/` gitignored.

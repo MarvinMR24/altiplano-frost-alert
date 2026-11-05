@@ -83,11 +83,13 @@ deploy/scripts/sync_artifacts.sh ubuntu@<EIP> --dry-run   # shows what would be 
 deploy/scripts/sync_artifacts.sh ubuntu@<EIP>
 ```
 
-In `.env.production` set at least `APP_ENV=production`, `DOMAIN` (no https://),
+In `.env.production` set at least `APP_ENV=demo`, `DOMAIN` (no https://),
 `PUBLIC_BASE_URL=https://<DOMAIN>`, `SESSION_SECRET`, `DATA_PROVIDER=artifacts`,
 `MUSE_MOCK=0` with the Meta API settings and `MUSE_MAX_TOKENS=8000`, and
-`EMAIL_PROVIDER=smtp` with all `EMAIL_SMTP_*` and `EMAIL_FROM` (the backend refuses to start
-in production without a session secret or with console email). For SSH with the key file,
+`EMAIL_PROVIDER=console`: login codes are printed in the server log
+(`dc logs backend | grep -iE "codigo|código|code is"`), so on the demo server people sign in
+with Google. `APP_ENV=production` would require real email (SMTP), which this project does
+not use. For SSH with the key file,
 add `-i` support with `ssh-add ~/.ssh/frostwatch.pem` before running the scripts.
 
 ## 5. Deploy and check
@@ -116,7 +118,8 @@ dc exec backend python -m app.cli replay --night 2024-08-17 --email <your-email>
 dc exec backend python -m app.cli replay --night 2024-08-17 --email <your-email>
 ```
 
-The replay sends a real email (SMTP) and an Expo push to devices registered by that user,
+The replay writes the alert email to the server log (console email), sends an Expo push to
+devices registered by that user,
 with a Muse explanation (it is labeled as a replay).
 
 ## 7. Operate
