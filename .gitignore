@@ -23,7 +23,7 @@ node_modules/
 web/dist/
 
 # Data (fetched by scripts, never committed)
-data/
+/data/
 *.db
 
 # Expo

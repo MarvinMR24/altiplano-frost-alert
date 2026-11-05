@@ -20,6 +20,13 @@ if [[ -z "$DOMAIN" ]]; then
   exit 1
 fi
 
+# The backend container runs as uid 10001: make sure it can read the synced artifacts.
+chmod -R a+rX artifacts
+if [[ ! -f backend/app/data/cells.json ]]; then
+  echo "backend/app/data/cells.json missing: pull a version of the repo that includes it" >&2
+  exit 1
+fi
+
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile prod)
 
 git pull --ff-only

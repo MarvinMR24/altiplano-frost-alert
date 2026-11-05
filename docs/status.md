@@ -515,3 +515,12 @@ map, map summary and risk sheet, sign out to Welcome, unverified login to verify
   `APP_ENV=demo` and console email, `backend/.env.backend.example` updated. SMTP stays in the
   code but is not used.
 - `video_raw/` removed (moved to the Trash), `reviews/` gitignored.
+
+## AWS map fix (2026-11-05, uncommitted)
+
+- `/coverage` returned 500 on the server: `backend/app/data/cells.json` was never committed
+  because the generic `data/` rule in `.gitignore` also matched it. The rule is now `/data/`
+  (root ML data only) and the file is no longer ignored.
+- `/map` returned 503 (PermissionError on the parquet files): the artifacts kept the Mac's
+  600 mode and the backend container (uid 10001) could not read them. `sync_artifacts.sh`
+  now uploads with `--chmod=Da+rx,Fa+r` and `deploy.sh` runs `chmod -R a+rX artifacts`.
