@@ -21,5 +21,7 @@ if [[ ! -f "$ROOT/artifacts/model_card.json" ]]; then
 fi
 
 # --delete keeps the server copy identical; .gitkeep stays because it exists locally too.
-rsync -az --delete --stats $DRY "$ROOT/artifacts/" "$TARGET:$REMOTE_DIR/artifacts/"
+# --chmod makes every file world-readable on the server: the backend container runs as its
+# own user (uid 10001) and cannot read files that keep the Mac's 600 mode.
+rsync -az --delete --stats --chmod=Da+rx,Fa+r $DRY "$ROOT/artifacts/" "$TARGET:$REMOTE_DIR/artifacts/"
 echo "artifacts synced to $TARGET:$REMOTE_DIR/artifacts/ ${DRY:+(dry run, nothing copied)}"

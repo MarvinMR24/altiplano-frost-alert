@@ -1,6 +1,6 @@
 # FrostWatch Altiplano
 
-Frost early warning for the Bolivian Altiplano (La Paz to Oruro corridor). A reproducible machine learning pipeline predicts, at 18:00 local time, whether the coming night will have frost in 8 areas. A mobile app (iPhone, Expo Go) delivers email and in-app alerts with a plain-language explanation written by Meta's Muse Spark. Alerts cover crops, livestock, water pipes, vehicles, road ice and property.
+Frost early warning for the Bolivian Altiplano (La Paz to Oruro corridor). A reproducible machine learning pipeline predicts, at 18:00 local time, whether the coming night will have frost in 8 areas. A mobile app (iPhone, Expo Go) shows the risk on a satellite map and delivers in-app and push alerts with a plain-language explanation written by Meta's Muse Spark, in Spanish, English, Aymara and Quechua. Alerts cover crops, livestock, water pipes, vehicles, road ice and property.
 
 Built for the Meta Global AI Developer Hackathon (Indie track, "Build for Your World").
 
@@ -23,7 +23,7 @@ flowchart LR
   R2 --> MUSE
   R2 --> ART[model card + lr_export.json]
   ART --> API[backend: risk, alerts, Muse explanation]
-  API --> APP[iPhone app: push + email]
+  API --> APP[iPhone app: map, push, Muse explanations]
   NT -.locked.-> TEST[final test evaluation, once]
 ```
 
@@ -34,6 +34,76 @@ flowchart LR
 5. **Serving:** for each processed night, the backend computes the frost probability per area, compares it with the threshold fixed on validation and with the user's threshold (30, 50 or 70 percent), and sends one alert per area per night by email and Expo push. Muse Spark writes the explanation, and every number in it is checked against the model output, with a template fallback.
 
 There is no live forecast yet. CDS reanalysis is published a few days late, so a night is processed either as a **replay** of a held-out test night with a simulated clock (the demo) or as a **manual tick** for a chosen date. Alerts are generated when a night is processed. They are not real time.
+
+## Try it and run it
+
+The app works best on an **iPhone with Expo Go**: it uses Apple Maps, which needs no key.
+On Android the map needs a Google Maps API key of your own (see "Limitations" below).
+
+### Option A: use the hackathon backend on AWS (until 2026-11-16)
+
+During the judging period the backend runs on AWS at `https://174-129-189-202.sslip.io`
+(real model predictions, Muse explanations and Google sign in). **It will be shut down after
+the hackathon closes on 2026-11-16**; from then on use option B.
+
+1. Install **Expo Go** from the App Store and Node.js 20 or newer on your computer.
+2. In a terminal:
+   ```bash
+   git clone https://github.com/MarvinMR24/altiplano-frost-alert.git
+   cd altiplano-frost-alert/mobile
+   npm install
+   cp .env.example .env.local      # already points to the AWS backend
+   npx expo start -c
+   ```
+3. Scan the QR code with the iPhone camera (the phone and the computer on the same Wi-Fi).
+4. Sign in with **Google**. Email codes are not sent by email in this project (see below), and on
+   the AWS server they only appear in the server log, so Google is the way in there.
+
+### Option B: run everything on your own computer
+
+You need Docker Desktop, Node.js 20+, and Expo Go on an iPhone on the same Wi-Fi.
+
+1. Backend:
+   ```bash
+   cp .env.example .env            # defaults work: mock data, template explanations
+   docker compose up --build       # backend on http://localhost:8000
+   ```
+   - `DATA_PROVIDER=mock` gives synthetic data. For the real model predictions set
+     `DATA_PROVIDER=artifacts` and build them first (`dvc pull` and `make serving`, see
+     "Reproduce").
+   - `MUSE_MOCK=1` uses a fixed template. For real Muse explanations set `MUSE_MOCK=0` and your
+     `META_API_KEY`.
+2. App:
+   ```bash
+   cd mobile
+   npm install
+   cp .env.example .env.local
+   ```
+   In `mobile/.env.local` comment the AWS line and set your computer's Wi-Fi address (not
+   `localhost`, the phone must reach it): `EXPO_PUBLIC_API_URL=http://<your-ip>:8000`
+   (macOS: `ipconfig getifaddr en0`). Then `npx expo start -c` and scan the QR code.
+3. **Verification codes:** there is no email sending. The 6-digit code for sign up, sign in
+   and password reset is printed in the backend log:
+   ```bash
+   docker compose logs -f backend | grep -iE "codigo|código|code is"
+   ```
+4. **Google sign in** works locally only if you create your own Google Cloud OAuth client and
+   expose the backend on a public https URL (Google rejects local addresses); see
+   `.env.example`. Otherwise the button shows "coming soon" and you use email codes.
+
+Without any backend, `EXPO_PUBLIC_USE_MOCK=1` in `mobile/.env.local` runs the app on in-app fake
+data. The web build (`npx expo start --web`) is for local testing only.
+
+### Android
+
+There is no store build. You can build your own APK with EAS (`docs/android_build.md`), but
+you must create your own Google Maps API key (Maps SDK for Android), restricted to your
+package and signing certificate, and store it as the EAS secret `GOOGLE_MAPS_API_KEY`.
+Without it everything works except the map, which stays empty.
+
+### Deploy your own server
+
+Backend on AWS (EC2, Docker Compose, Caddy with HTTPS): `docs/deploy_aws.md`.
 
 ## Final test results (2018-2025, 23,376 nights, evaluated once)
 
@@ -142,19 +212,6 @@ DagsHub repository: https://dagshub.com/SNARF3/altiplano-frost
 
 Modules: `src/frostwatch_ml` + `pipelines/` (ML), `backend/` (FastAPI + SQLite: users, areas, risk, alerts, email, Expo push, Muse explanations), `mobile/` (Expo app). The modules never import each other. The backend reads the model artifacts read-only.
 
-## Download
-
-- Android: the APK is attached to the latest GitHub Release (Releases page of this repo).
-  Allow installing apps from your browser when Android asks.
-- iPhone: install Expo Go and open the project link shared by the team (no App Store build
-  yet).
-- Web: local testing only (`cd mobile && npx expo start --web`).
-
-## Deploy
-
-- Backend on AWS (EC2, Docker Compose, Caddy with HTTPS): `docs/deploy_aws.md`.
-- Android APK with EAS Build and Google Maps: `docs/android_build.md`.
-
 ## Reproduce
 
 ```
@@ -191,6 +248,13 @@ Next:
 - Reanalysis arrives a few days late, so there is no forecast for tonight yet (see future work).
 - No confidence intervals: small metric differences may be noise.
 - The model covers only the 8 cells it was trained on.
+- The app is meant for iPhone with Expo Go. On Android the map requires your own Google Maps
+  API key and an APK built with EAS.
+- No email is sent: verification codes are printed in the backend log. On the shared AWS
+  server, sign in with Google.
+- The AWS backend is a demo for the judging period and closes after 2026-11-16; after that the
+  project must be run locally (see "Try it and run it").
+- New nights are not ingested automatically: the latest processed night is 2026-10-26.
 
 ## Future work
 

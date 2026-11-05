@@ -11,7 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE_WITH_YOUR_DOMAIN",
+        "EXPO_PUBLIC_API_URL": "https://174-129-189-202.sslip.io",
         "EXPO_PUBLIC_USE_MOCK": "0"
       }
     },
@@ -21,7 +21,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE_WITH_YOUR_DOMAIN",
+        "EXPO_PUBLIC_API_URL": "https://174-129-189-202.sslip.io",
         "EXPO_PUBLIC_USE_MOCK": "0"
       }
     }

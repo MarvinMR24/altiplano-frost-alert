@@ -1,0 +1,13 @@
+{
+  "note": "The 8 ERA5-Land cells of the La Paz to Oruro corridor (configs/points.yaml). lat and lon are the grid cell coordinates.",
+  "cells": [
+    {"point_id": "el_alto", "name": "El Alto", "lat": -16.5, "lon": -68.2},
+    {"point_id": "oruro", "name": "Oruro", "lat": -18.0, "lon": -67.1},
+    {"point_id": "patacamaya", "name": "Patacamaya", "lat": -17.2, "lon": -67.9},
+    {"point_id": "calamarca", "name": "Calamarca", "lat": -17.0, "lon": -68.1},
+    {"point_id": "caracollo", "name": "Caracollo", "lat": -17.6, "lon": -67.2},
+    {"point_id": "corocoro", "name": "Corocoro", "lat": -17.2, "lon": -69.1},
+    {"point_id": "charana", "name": "Charaña", "lat": -17.6, "lon": -69.4},
+    {"point_id": "huanuni", "name": "Huanuni", "lat": -18.3, "lon": -66.8}
+  ]
+}
